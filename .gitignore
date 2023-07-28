@@ -51,6 +51,8 @@ out/
 .springBeans
 .sts4-cache
 bin/
+.gradle/
+.idea/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
