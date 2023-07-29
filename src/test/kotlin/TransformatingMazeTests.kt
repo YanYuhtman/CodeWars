@@ -3,7 +3,7 @@ import kotlin.test.assertEquals
 import TransformingMaze.Companion.mazeToString
 import TransformingMaze.Companion.rotateCell
 
-internal class TransformatingMazeTests {
+internal class  TransformatingMazeTests {
 
     val maze = arrayOf(
         arrayOf(4, 2, 5, 4),
