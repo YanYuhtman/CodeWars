@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -19,17 +20,57 @@ public class Kata {
             outList.add(str);
             outList.add(new StringBuilder().append(str.charAt(1)).append(str.charAt(0)).toString());
         }else{
-            List<String> combinations = combinations(str.substring(1));
-            for(String s: combinations){
-                for(int i = 0; i <= s.length(); i++) {
-                    outList.add(new StringBuilder(s).insert(i,str.charAt(0)).toString());
+            for(int i = str.length()-1; i >= 0; i--){
+                for(String prefix : combinations(str.substring(0,i) + str.substring(i+1))) {
+                    outList.add(prefix + str.charAt(i));
                 }
             }
         }
         return outList;
     }
 
-    public static long nextBiggerNumber (long n)
+    public static List<String> combinationSet = null;//combinations("0123456789");
+
+    public static long nextBiggerNumber (long n) {
+        long start = System.currentTimeMillis();
+
+        if(combinationSet == null){
+            combinationSet = combinations("0123456789");
+            System.out.println("Compilation of combination set took: " + (System.currentTimeMillis() - start));
+            start = System.currentTimeMillis();
+        }
+
+        if(n / 10L == 0)
+            return -1;
+        long result = -1;
+        long distance = Long.MAX_VALUE;
+
+        char[] numArray = Long.toString(Math.abs(n)).toCharArray();
+        char[] tmpArray = new char[numArray.length];
+        try {
+            for (String combination : combinationSet) {
+                for (int i = 0; i < numArray.length; i++) {
+                    try {
+                        tmpArray[i] = numArray[combination.charAt(i) - 48];
+                    } catch (IndexOutOfBoundsException e) {
+                        return result;
+                    }
+                }
+                long val = Long.parseLong(new String(tmpArray)) * (n < 0 ? -1 : 1);
+                if (val - n > 0 && val - n < distance) {
+                    distance = val - n;
+                    result = val;
+                }
+            }
+            System.out.println("Evaluation of vale: " + n + " to: " + result + " took:"  + (System.currentTimeMillis() - start));
+            return result;
+        }catch (Exception e){
+            return -2;
+        }
+
+    }
+
+    public static long nextBiggerNumber2 (long n)
     {
         if(n / 10L == 0)
             return -1;
@@ -51,6 +92,16 @@ public class Kata {
         return n < 0 ? result.get() * -1 : result.get();
 
     }
+    @Test
+    public void timeoutTest(){
+        long start = System.currentTimeMillis();
+
+        for(int i = 0; i < 50; i++)
+            nextBiggerNumber(1000000000L + (long) (Math.random() * (9999999999L - 1000000000L )));
+
+        long end = System.currentTimeMillis();
+        System.out.println("DEBUG: Logic A took " + (end - start) + " MilliSeconds");
+    }
 
     @Test
     public void basicTests() {
@@ -70,7 +121,6 @@ public class Kata {
         assertEquals(123456798, Kata.nextBiggerNumber(123456789));
 
         assertEquals(1234567908, Kata.nextBiggerNumber(1234567890));
-
 
 
 
