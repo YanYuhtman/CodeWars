@@ -1,3 +1,4 @@
+import java.math.BigInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -507,5 +508,89 @@ fun nextBiggerNumberWRONG1(n: Long): Long {
         println("DEBUG: Logic A took " + (end - start) + " MilliSeconds")
 
 
+    }
+}
+class FabergeTest {
+
+    @Test
+    fun check100(){
+        val n = 90
+        for(k in 1 until n){
+            var tmpK = k /*+ 10*/
+            var sum = 0
+            while (tmpK > 1 && sum < n ){
+                sum += tmpK
+                tmpK -=1
+            }
+            if(sum >= n) {
+                println("Found k: $k sum: $sum")
+                break
+            }
+        }
+
+    }
+    fun minAttemptsVerification(eggs: Int, height: Int) : Int{
+        println("New Height: ${(height*height + height)/2}" )
+        if(eggs < 2)
+            return height
+        if(eggs == 2)
+            return Math.ceil(0.5 * (Math.sqrt(1 + 8 * height.toDouble()) -1)).toInt()
+        var result = Int.MAX_VALUE
+
+//        for(a in 2 until height){
+            val tmp = minAttemptsVerification(eggs - 1, height)
+            val variant = minAttemptsVerification(2, tmp)
+            if(result > variant)
+                result = variant
+//        }
+        return result
+
+    }
+    fun height(n: BigInteger, m: BigInteger): BigInteger {
+        if(n < BigInteger.TWO || m < BigInteger.TWO)
+            return m
+        if(n == BigInteger.TWO)
+            return (m*m + m)/ BigInteger.TWO
+        if(n == m)
+            return BigInteger.TWO.pow(n.toInt()) - BigInteger.ONE
+
+        return height(n - BigInteger.ONE , m - BigInteger.ONE ) + height(n,m - BigInteger.ONE) + BigInteger.ONE
+    }
+
+    private fun test(a: Int, b: Int, shouldBe: Int) {
+        assertEquals(BigInteger.valueOf(shouldBe.toLong()), height(BigInteger.valueOf(a.toLong()), BigInteger.valueOf(b.toLong())))
+    }
+
+    private fun test(a: String, b: String, shouldBe: String) {
+        assertEquals(BigInteger(shouldBe), height(BigInteger(a), BigInteger(b)))
+    }
+
+    @Test
+    fun verification(){
+        println("${minAttemptsVerification(2, 14)}")
+        println("${minAttemptsVerification(2, 13)}")
+        println("${minAttemptsVerification(2, 12)}")
+        println("2,100: ${minAttemptsVerification(2, 100)}")
+//        println("4,100: ${minAttemptsVerification(4, 100)}")
+//        println("4,3213: ${minAttemptsVerification(4, 3213)}")
+        val bp = 0
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun basicTests() {
+        test(1, 51, 51)
+        test(2, 1, 1)
+        test(4, 17, 3213)
+        test(16, 19, 524096)
+        test(23, 19, 524287)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun advancedTests() {
+        test("13", "550", "60113767426276772744951355")
+//        test("271", "550", "1410385042520538326622498273346382708200418583791594039531058458108130216985983794998105636900856496701928202738750818606797013840207721579523618137220278767326000095")
+//        test("531", "550", "3685510180489786476798393145496356338786055879312930105836138965083617346086082863365358130056307390177215209990980317284932211552658342317904346433026688858140133147")
     }
 }

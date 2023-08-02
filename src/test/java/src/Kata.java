@@ -56,6 +56,55 @@ public class Kata {
     public static long nextBiggerNumber (long n) {
         long start = System.currentTimeMillis();
 
+        String cTemplate = "0123456";
+        if(combinationSet == null){
+            combinationSet = combinations(cTemplate);
+            System.out.println("Compilation of combination set took: " + (System.currentTimeMillis() - start));
+            start = System.currentTimeMillis();
+        }
+
+        if(n / 10L == 0)
+            return -1;
+        long result = -1;
+        long distance = Long.MAX_VALUE;
+
+        String nString = Long.toString(Math.abs(n));
+        String[] nSplit = {"",""};
+        if(nString.length() > cTemplate.length()){
+            nSplit = new String[]{nString.substring(0, nString.length() - cTemplate.length())
+                    ,nString.substring(nString.length() - cTemplate.length())};
+        }else
+            nSplit[1] = nString;
+
+        char[] numArray = nSplit[1].toCharArray();
+        char[] tmpArray = new char[numArray.length];
+        try {
+            for (String combination : combinationSet) {
+                for (int i = 0; i < numArray.length; i++) {
+                    try {
+                        tmpArray[i] = numArray[combination.charAt(i) - 48];
+                    } catch (IndexOutOfBoundsException e) {
+                        return result;
+                    }
+                }
+                long val = Long.parseLong(nSplit[0] + new String(tmpArray)) * (n < 0 ? -1 : 1);
+                if (val - n > 0 && val - n < distance) {
+                    distance = val - n;
+                    result = val;
+                }
+            }
+            System.out.println("Evaluation of vale: " + n + " to: " + result + " took:"  + (System.currentTimeMillis() - start));
+            return result;
+        }catch (Exception e){
+            return -2;
+        }
+        Arrays.so
+
+    }
+
+    public static long nextBiggerNumberLong (long n) {
+        long start = System.currentTimeMillis();
+
         if(combinationSet == null){
             combinationSet = combinations("0123456789");
             System.out.println("Compilation of combination set took: " + (System.currentTimeMillis() - start));
@@ -143,6 +192,8 @@ public class Kata {
         assertEquals(123456798, Kata.nextBiggerNumber(123456789));
 
         assertEquals(1234567908, Kata.nextBiggerNumber(1234567890));
+        assertEquals(811023359, Kata.nextBiggerNumber(810953321));
+
 
 
 
