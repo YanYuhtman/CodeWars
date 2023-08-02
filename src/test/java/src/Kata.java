@@ -1,10 +1,7 @@
 
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -12,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class Kata {
 
     public static List<String> combinations(String str){
-        ArrayList<String> outList = new ArrayList<>();
+        ArrayList<String> outList = new ArrayList<>((int)factorial(str.length()));
         if(str.length() < 2) {
             outList.add(str);
             return outList;
@@ -29,6 +26,31 @@ public class Kata {
         return outList;
     }
 
+    static final long[] _factorial_cache = new long[]{1L,1L,2L,6L,24L,120L,720L,5040L,40320L,362880L,3628800L,39916800L,479001600L,6227020800L,87178291200L,1307674368000L,20922789888000L,355687428096000L,6402373705728000L,121645100408832000L,2432902008176640000L};
+    public static long factorial(long i){
+        if(i <= 1)
+            return 1L;
+        if(_factorial_cache.length < i)
+            return _factorial_cache[(int)i];
+
+        return i * factorial(i - 1);
+
+    }
+    public static String generatePermutation(int i, int length){
+        List<Character> template = new LinkedList<>();
+        for(char index = '0'; index < length + 48; index++)
+            template.add(index);
+
+        StringBuilder result = new StringBuilder();
+
+        do {
+            int n = template.size();
+            int A_i_k = n - 1 - (i / (int)factorial(n - 1)) % n;
+            result.insert(0,template.remove(A_i_k));
+        }while (template.size() > 0);
+
+        return result.toString();
+    }
     public static List<String> combinationSet = null;//combinations("0123456789");
 
     public static long nextBiggerNumber (long n) {
@@ -126,5 +148,63 @@ public class Kata {
 
         long end = System.currentTimeMillis();
         System.out.println("DEBUG: Logic A took " + (end - start) + " MilliSeconds");
+    }
+
+
+    @Test
+    public void testPermutationGenerator(){
+        String set = "0123456789";
+        List<String> combinations = combinations(set);
+        assertEquals(combinations.get(0),generatePermutation(0,set.length()));
+        assertEquals(combinations.get(6),generatePermutation(6,set.length()));
+        assertEquals(combinations.get(13),generatePermutation(13,set.length()));
+        assertEquals(combinations.get(21),generatePermutation(21,set.length()));
+
+
+        assertEquals(combinations.get(102),generatePermutation(102,set.length()));
+
+        assertEquals(combinations.get(301),generatePermutation(301,set.length()));
+
+        for(int i = 0; i< 200; i++) {
+            int randomIndex = (int) (Math.random() * combinations.size());
+            assertEquals(combinations.get(randomIndex), generatePermutation(randomIndex, set.length()));
+        }
+
+
+        for(int i = 0; i < 24; i++) {
+            System.out.println("c: " + combinations.get(i));
+            System.out.println("g: " + combinations.get(i));
+            System.out.println();
+        }
+    }
+    @Test
+    public void testPermutationsSpeed(){
+        String set = "0123456789";
+
+        long start = System.currentTimeMillis();
+
+        List<String> combinationList = combinations(set);
+
+        long end = System.currentTimeMillis();
+        System.out.println("DEBUG: recursive algorithm took " + (end - start) + " MilliSeconds");
+
+
+        start = System.currentTimeMillis();
+
+
+        List<String> generatedList = new ArrayList<>(combinationList.size());
+        for(int i = 0; i < combinationList.size(); i++){
+             generatedList.add(generatePermutation(i,set.length()));
+        }
+
+        end = System.currentTimeMillis();
+        System.out.println("DEBUG: iterative algorithm took " + (end - start) + " MilliSeconds");
+
+        assertEquals(combinationList,generatedList);
+
+    }
+    @Test
+    public void testFactorial(){
+        assertEquals (factorial(21),-4249290049419214848L);
     }
 }
