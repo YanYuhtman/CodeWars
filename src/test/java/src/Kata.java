@@ -98,7 +98,6 @@ public class Kata {
         }catch (Exception e){
             return -2;
         }
-        Arrays.so
 
     }
 
