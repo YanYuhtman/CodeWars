@@ -1,7 +1,9 @@
-import org.junit.jupiter.api.assertTimeoutPreemptively
 import java.math.BigInteger
-import kotlin.io.path.fileVisitor
+import java.util.*
+import kotlin.math.floor
+import kotlin.math.sqrt
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
 class PersistenceNumber {
@@ -103,9 +105,6 @@ class RomanNumbers {
     }
 
 }
-
-
-
 
 class ObservedPinTest {
     class Permutator(input: Array<IntArray>){
@@ -759,6 +758,215 @@ class FabergeTest {
         test("13", "550", "60113767426276772744951355")
 //        test("271", "550", "1410385042520538326622498273346382708200418583791594039531058458108130216985983794998105636900856496701928202738750818606797013840207721579523618137220278767326000095")
 //        test("531", "550", "3685510180489786476798393145496356338786055879312930105836138965083617346086082863365358130056307390177215209990980317284932211552658342317904346433026688858140133147")
+    }
+}
+
+class SortDistinct(){
+
+    fun countDistinct(text:String) : Int{
+        return text.uppercase().toCharArray()
+            .groupBy { it }
+            .mapNotNull { if(it.value.size > 1) it else null }
+            .count()
+    }
+
+    @Test
+    fun testDistrinct(){
+        assertEquals(0,countDistinct("abcdefg"))
+        assertEquals(1, countDistinct("abcdefga"))
+        assertEquals(2, countDistinct("ab11cdefga"))
+    }
+
+}
+class SpinWords{
+    fun spinWords(text:String): String{
+        return text.split(' ')
+            .map { if(it.length >= 5) it.reversed() else it}
+            .joinToString ( " " )
+    }
+    @Test
+    fun test(){
+        assertEquals("Hey wollef sroirraw",  spinWords("Hey fellow warriors"))
+        assertEquals("This is a test",  spinWords("This is a test"))
+        assertEquals("This is rehtona test",  spinWords("This is another test"))
+    }
+
+}
+class CompleteBinaryTree{
+
+    fun completeBinaryTree(arr:IntArray):IntArray{
+        if (arr.size == 1) return arr
+        if (arr.size == 2) return intArrayOf(arr.get(1), arr.get(0))
+
+        val n = 1 shl Math.ceil(Math.log(arr.size.toDouble()) / Math.log(2.0)).toInt()
+        val arrayList: MutableList<Int> = arr.toMutableList()
+
+        val result  = mutableListOf<Int>()
+
+        var j = 0
+        while (!arrayList.isEmpty()) {
+            var i = if (j == 0) arrayList.size - (n - arrayList.size) else arrayList.size - 1
+            while (i >= 0) {
+                result.add(0, arrayList[i])
+                arrayList.removeAt(i)
+                i -= 2
+            }
+            j++
+        }
+
+        return result.toIntArray()
+    }
+    fun completeBinaryTree1(arr:IntArray):IntArray{
+            val n = 1 shl Math.ceil(Math.log(arr.size.toDouble()) / Math.log(2.0)).toInt()
+
+            val tmpList = arr.toMutableList()
+
+            val output = mutableListOf<List<Int>>(
+                (tmpList.mapIndexedNotNull { index, i -> if (index < tmpList.size - (n - tmpList.size - 1) && index % 2 == 0) i else null }
+                    .also { mapped -> tmpList.removeIf { it in mapped } })
+            )
+            while (tmpList.isNotEmpty()) {
+                output.add(
+                    (tmpList.mapIndexedNotNull { index, i -> if (index % 2 == 0) i else null })
+                        .also { mapped2 -> tmpList.removeIf { it in mapped2 } })
+            }
+            var tmp =  output.reversed().flatten().toIntArray()
+        if(tmp.size != arr.size)
+            println(tmp.toList().mapNotNull { if(it in arr) null else it })
+        return tmp
+    }
+    fun bfs(arr: IntArray) : IntArray{
+        if(arr.size <= 1)
+            return arr
+        val output:IntArray = IntArray(arr.size)
+        val indexQueue:Queue<Pair<Int,Int>> = LinkedList<Pair<Int,Int>>()
+
+        val n = Math.ceil(Math.log(arr.size.toDouble())/Math.log(2.0))
+        val rootIndex =  arr.size - (Math.pow(2.0,n-2).toInt() - 1) - 1
+
+        output[0] = arr[rootIndex]
+        var indexArray = 1
+        indexQueue.add(Pair(0,rootIndex))
+        indexQueue.add(Pair(rootIndex + 1, arr.size))
+
+        while (indexQueue.isNotEmpty()){
+            var itemCount = indexQueue.size
+            do {
+                var i = indexQueue.poll()!!
+                var rootIndex = i.first + (i.second - i.first) / 2
+                output[indexArray++] = arr[rootIndex]
+
+                if(i.first != rootIndex)
+                    indexQueue.add(Pair(i.first, rootIndex))
+                if(i.second != rootIndex + 1)
+                    indexQueue.add(Pair(rootIndex + 1, i.second))
+
+            }while (--itemCount > 0)
+        }
+
+        return output
+    }
+    @Test
+    fun `test single node tree`() {
+        val input = intArrayOf(1)
+        val expected = intArrayOf(1)
+        assertContentEquals(expected, completeBinaryTree(input))
+    }
+
+    @Test
+    fun `test tree with two nodes`() {
+        val input = intArrayOf(1, 2)
+        val expected = intArrayOf(2, 1)
+        assertContentEquals(expected, completeBinaryTree(input))
+    }
+
+    @Test
+    fun `test tree with six nodes`() {
+        val input = intArrayOf(1, 2, 3, 4, 5, 6)
+        val expected = intArrayOf(4, 2, 6, 1, 3, 5)
+        assertContentEquals(expected, completeBinaryTree(input))
+    }
+
+    @Test
+    fun `test tree with ten nodes`() {
+        val input = intArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+        val expected = intArrayOf(7, 4, 9, 2, 6, 8, 10, 1, 3, 5)
+        assertContentEquals(expected, completeBinaryTree(input))
+    }
+    @Test
+    fun randomTest(){
+        for(i in 0 .. 100) {
+            val length = 8000 + (Math.random() * 1000).toInt()
+            val tree = completeBinaryTree((1..length).shuffled().toList().toIntArray())
+            assertEquals(length,tree.size)
+
+        }
+    }
+}
+
+class StringIncreaser{
+
+    fun incrementString(str:String):String{
+        var isNegative = BigInteger.ONE
+        return "(.*?)(-?)([\\d]*)\$".toRegex().find(str)
+            ?.groupValues
+            ?.mapIndexedNotNull { index, value ->
+                if(index == 0)
+                    null
+
+                else if(index == 2) {
+                    if(value == "-") {
+                        isNegative = -BigInteger.ONE
+                        value
+                    }else
+                        null
+                }else if(index == 3){
+                    if(value.isBlank())
+                        "1"
+                    else {
+                        val tmp = value.toBigInteger().add(BigInteger.ONE.multiply(isNegative)).toString()
+                        if (tmp.length >= value.length)
+                            tmp
+                        else
+                            value.replaceRange(value.length - tmp.length, value.length, tmp)
+                    }
+                }
+                else
+                    value
+            }!!.joinToString("")
+
+    }
+
+
+
+    @Test
+    fun FixedTests() {
+        assertEquals(incrementString("foobar000"), "foobar001")
+        assertEquals(incrementString("foobar999"), "foobar1000")
+        assertEquals(incrementString("foobar00999"), "foobar01000")
+        assertEquals(incrementString("foo"), "foo1")
+        assertEquals(incrementString("foobar001"), "foobar002")
+        assertEquals(incrementString("foobar1"), "foobar2")
+        assertEquals(incrementString("1"), "2")
+        assertEquals(incrementString(""), "1")
+        assertEquals(incrementString("009"), "010")
+        assertEquals("fooo-0098",incrementString("fooo-0099"))
+    }
+}
+
+class Int32ToIPv4{
+    fun Int32ToIPv4(ip: UInt):String{
+       return mutableListOf<UInt>()
+            .also {
+                val bitSet:UInt = 255u
+                for(i in 0 until 4)
+                    it.add(0,(ip and (bitSet shl i*8)) shr i*8 )
+            }.joinToString ( "." )
+
+    }
+    @Test
+    fun test(){
+        assertEquals("128.32.10.1",Int32ToIPv4(2149583361u))
     }
 }
 
