@@ -19,7 +19,13 @@ class BlockSequence {
        return ((d + 2*a1) + Math.floor(Math.sqrt(Math.pow((2*a1-d).toDouble(),2.0) + 8 * S_n * d)).toLong())/(2 * d)
 
     }
-    fun findN(n:Int) : Int{
+    fun findN(n: Int) :Int{
+        val k =  Math.floor((-1 + Math.sqrt(1.0 + 8.0*n/9))/2.0).toInt()
+        val newN = n - 9*(k + 1)*k/2
+        val multiplayer = if(k > 0) 10 * k.toString().length else 1
+        return (1*multiplayer .. 9*multiplayer).joinToString("")[newN - 1].digitToInt()
+    }
+    fun findNOld(n:Int) : Int{
         var strBuilder = StringBuilder()
         var start = 1
         var counter = 0
@@ -31,7 +37,7 @@ class BlockSequence {
             if(strBuilder.length >= n)
                 break
         }
-        return strBuilder.toString()[n].digitToInt()
+        return strBuilder.toString()[n-1].digitToInt()
     }
     fun solve2(n:Long):Int{
         var a1 = 1L
@@ -50,19 +56,19 @@ class BlockSequence {
             checkSum = lastSum + S_n(1,d,next_n - 1) * sumMultiplier
         }while (checkSum < n)
 
-        val result = findCunckIndex(a1,d,prev_a_nSum, n - lastSum, 0, next_n -1L)
-        return findN((n - lastSum - result.first - 1).toInt())
+        val result = findChunckIndex(a1,d,prev_a_nSum, n - lastSum, 0, next_n -1L)
+        return findNOld((n - lastSum - result.first).toInt())
     }
-    fun findCunckIndex(a1:Long, d:Long, prev_a_nSum:Long, n:Long, left: Long, right:Long):Pair<Long,Long>{
+    fun findChunckIndex(a1:Long, d:Long, prev_a_nSum:Long, n:Long, left: Long, right:Long):Pair<Long,Long>{
         val sumMultilayer = a1.toString().length
         val interval = Pair((prev_a_nSum * left) + S_n(1,d,left) * sumMultilayer,(prev_a_nSum * (left+1)) + S_n(1,d,left + 1)*sumMultilayer)
         if(n > interval.first && n <= interval.second )
             return Pair(interval.first,left + 1)
 
         if(n > interval.second)
-            return  findCunckIndex(a1, d, prev_a_nSum, n, (left+right)/2, right)
+            return  findChunckIndex(a1, d, prev_a_nSum, n, (left+right)/2, right)
         else
-            return findCunckIndex(a1,d,prev_a_nSum, n,left/2,left)
+            return findChunckIndex(a1,d,prev_a_nSum, n,left/2,left)
     }
     fun solve0(n:Long):Int{
         var n1 = n
@@ -99,8 +105,8 @@ class BlockSequence {
 //        runTest(50,5)
 //        runTest(51,6)
         runTest(100L,1)
-//        runTest(2100L,2)
-//        runTest(31000L,2)
+        runTest(2100L,2)
+        runTest(31000L,2)
 //        runTest(999999999999999999L,4)
 //        runTest(1000000000000000000L,1)
 //        runTest(999999999999999993L,7)
