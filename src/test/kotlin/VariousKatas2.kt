@@ -48,6 +48,7 @@ class BlockSequence {
         }while (checkSum < n)
 
         val prevChunkSum = getPrevChunksSum(a1.toString().length,d,prev_a_nSum, n - lastSum, 0, next_n -1L)
+//        return  findNOld1((n - lastSum - prevChunkSum).toInt())
         return findN((n - lastSum - prevChunkSum).toInt(), 1)
     }
 
@@ -56,9 +57,8 @@ class BlockSequence {
         var midSum = prev_a_nSum * m + S_n(1, d, m) * digits
 
         if(left >= right) {
-            while (midSum >= n) {
+            while (midSum >= n)
                 midSum = prev_a_nSum * (m - 1) + S_n(1, d, m-- - 1) * digits
-            }
             return midSum
         }
 
@@ -91,11 +91,11 @@ class BlockSequence {
 //        runTest(99L,2)
 //        runTest(100L,1)
 //        runTest(101L,3)
-//        runTest(2100L,2)
-        runTest(31000L,2)
+        runTest(2100L,2)
+//        runTest(31000L,2)
 //        runTest(999999999999999999L,4)
     //        runTest(999999999999999999L,0) //CUSTOM
-//        runTest(1000000000000000000L,1)
+        runTest(1000000000000000000L,1)
         //        runTest(1000000000000000001L,1) //CUSTOM
         //        runTest(1000000000000000002L,2) //CUSTOM
         //        runTest(1000000000000000003L,3) //CUSTOM
