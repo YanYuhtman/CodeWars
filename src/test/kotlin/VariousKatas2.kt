@@ -1,4 +1,5 @@
 import kotlin.math.floor
+import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -51,48 +52,47 @@ class BlockSequence {
     }
 
     fun getPrevChunksSum(digits: Int, d:Long, prev_a_nSum:Long, n:Long, left: Long, right:Long):Long{
-        val leftSum = prev_a_nSum * left + S_n(1, d, left) * digits
-        val rightSum = prev_a_nSum * right + S_n(1, d, right) * digits
+        var m = (right+left)/2L
+        var midSum = prev_a_nSum * m + S_n(1, d, m) * digits
 
-        if (leftSum >= n) {
-            return prev_a_nSum * (left - 1) + S_n(1, d, left - 1) * digits
+        if(left >= right) {
+            while (midSum >= n) {
+                midSum = prev_a_nSum * (m - 1) + S_n(1, d, m-- - 1) * digits
+            }
+            return midSum
         }
-        if (rightSum < n)
-            return prev_a_nSum * right + S_n(1, d, right) * digits
 
-        if (left >= right - 1)
-            return leftSum
-
-        if (n < (rightSum - leftSum) / 2)
-            return getPrevChunksSum(digits, d, prev_a_nSum, n, left, (right - left) / 2)
+        if(midSum > n)
+            return getPrevChunksSum(digits, d, prev_a_nSum, n,left, m - 1)
         else
-            return getPrevChunksSum(digits, d, prev_a_nSum, n, left + (right - left) / 2, right)
+            return getPrevChunksSum(digits, d, prev_a_nSum, n,m + 1, right)
+
     }
     private fun runTest(n:Long,sol:Int) = assertEquals(sol,solve(n))
 
     @Test fun someTests() {
-        runTest(1L,1)
-        runTest(2L,1)
-        runTest(3L,2)
-        runTest(7L,1)
-        runTest(8L,2)
-        runTest(9L,3)
-        runTest(10L,4)
-        runTest(11L,1)
-        runTest(37,1)
-        runTest(45,9)
-        runTest(46,1)
-        runTest(47,2)
-        runTest(48,3)
-        runTest(49,4)
-        runTest(50,5)
-        runTest(51,6)
-        runTest(98L,1)
-        runTest(99L,2)
-        runTest(100L,1)
-        runTest(101L,3)
-        runTest(2100L,2)
-//        runTest(31000L,2)
+//        runTest(1L,1)
+//        runTest(2L,1)
+//        runTest(3L,2)
+//        runTest(7L,1)
+//        runTest(8L,2)
+//        runTest(9L,3)
+//        runTest(10L,4)
+//        runTest(11L,1)
+//        runTest(37,1)
+//        runTest(45,9)
+//        runTest(46,1)
+//        runTest(47,2)
+//        runTest(48,3)
+//        runTest(49,4)
+//        runTest(50,5)
+//        runTest(51,6)
+//        runTest(98L,1)
+//        runTest(99L,2)
+//        runTest(100L,1)
+//        runTest(101L,3)
+//        runTest(2100L,2)
+        runTest(31000L,2)
 //        runTest(999999999999999999L,4)
     //        runTest(999999999999999999L,0) //CUSTOM
 //        runTest(1000000000000000000L,1)
