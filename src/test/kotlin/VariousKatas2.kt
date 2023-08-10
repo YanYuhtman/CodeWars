@@ -14,17 +14,17 @@ class BlockSequence {
     }
 
 
-    fun findN(n:Int, multyplayer:Int):Int{
+    fun findN(n:Long, multyplayer:Int):Int{
         if(n - 9 * multyplayer > 0)
-            return findN(n - 9 * multyplayer,multyplayer*10 + 1)
+            return findN(n,multyplayer*10 + 1)
         else {
-
-            val digits = multyplayer.toString().length
-            var a_n = if(digits == 1) n.toLong() else (n / digits + n%digits).toLong()
-            val reminder = (if(n%digits == 0) digits else n%digits) - 1
+            val N = n - 9 * multyplayer/10
+            val digits = multyplayer.toString().length.toLong()
+            var a_n = if(digits == 1L) N.toLong() else (N / digits + N % digits).toLong()
+            val reminder = (if(N % digits == 0L) digits else N % digits) - 1
             val A_n =  A_n(Math.pow(10.0,(digits -1).toDouble()).toLong(), 1, a_n)
-            println("N = $n n = $a_n a_n=$A_n reminder=$reminder")
-                return A_n.toString()[reminder].digitToInt()
+//            println("N = $n n = $a_n a_n=$A_n reminder=$reminder")
+                return A_n.toString()[reminder.toInt()].digitToInt()
 
         }
     }
@@ -44,13 +44,13 @@ class BlockSequence {
             current_a_nSum = prev_a_nSum
             tmpN -= chuncksSum(a1,d,a_n,prev_a_nSum)
             prev_a_nSum += (a_n - a1 + 1) * d
-            println("Sum ${prev_a_nSum}")
+//            println("Sum ${prev_a_nSum}")
             a1 *= 10
             d++
             a_n = a1 *10 - 1
         }
         val prevChunkSum = getPrevChunksSum(a1/10,d -1,a1/10,a_n/10, current_a_nSum,N)
-        return findN((N - prevChunkSum).toInt(), 1)
+        return findN((N - prevChunkSum), 1)
     }
 
     fun getPrevChunksSum(a1: Long, d:Long, a_nLeft: Long, a_nRight: Long, current_a_nSum:Long, n:Long, ):Long{
@@ -71,36 +71,34 @@ class BlockSequence {
     }
     private fun runTest(n:Long,sol:Int) = assertEquals(sol,solve(n))
 
+    @Test fun randomTimeTest(){
+
+    }
     @Test fun someTests() {
-//        runTest(1L,1)
-//        runTest(2L,1)
-//        runTest(3L,2)
-//        runTest(7L,1)
-//        runTest(8L,2)
-//        runTest(9L,3)
-//        runTest(10L,4)
-//        runTest(11L,1)
-//        runTest(37,1)
-//        runTest(45,9)
-//        runTest(46,1)
-//        runTest(47,2)
-//        runTest(48,3)
-//        runTest(49,4)
-//        runTest(50,5)
-//        runTest(51,6)
-//        runTest(98L,1)
-//        runTest(99L,2)
-//        runTest(100L,1)
-//        runTest(101L,3)
-//        runTest(2100L,2)
-//        runTest(31000L,2)
-//        runTest(999999999999999999L,4)
-    //        runTest(999999999999999999L,0) //CUSTOM
-//        runTest(1000000000000000000L,1)
-        runTest(999999999999999993L,7)
-        //        runTest(1000000000000000001L,1) //CUSTOM
-        //        runTest(1000000000000000002L,2) //CUSTOM
-        //        runTest(1000000000000000003L,3) //CUSTOM
+        runTest(1L,1)
+        runTest(2L,1)
+        runTest(3L,2)
+        runTest(7L,1)
+        runTest(8L,2)
+        runTest(9L,3)
+        runTest(10L,4)
+        runTest(11L,1)
+        runTest(37,1)
+        runTest(45,9)
+        runTest(46,1)
+        runTest(47,2)
+        runTest(48,3)
+        runTest(49,4)
+        runTest(50,5)
+        runTest(51,6)
+        runTest(98L,1)
+        runTest(99L,2)
+        runTest(100L,1)
+        runTest(101L,3)
+        runTest(2100L,2)
+        runTest(31000L,2)
+        runTest(999999999999999999L,4)
+        runTest(1000000000000000000L,1)
 
     }
     fun solveNew(n:Long):Int{
