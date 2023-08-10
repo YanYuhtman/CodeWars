@@ -1,5 +1,4 @@
 import kotlin.math.floor
-import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -8,7 +7,7 @@ class BlockSequence {
 
 
     fun S_n(a1:Long, d:Long, n:Long):Long{
-        return (2*a1 + d *(n - 1)) * n / 2
+        return ((2*a1 + d * (n - 1)) * n) / 2
     }
     fun A_n(a1:Long, d:Long, n:Long):Long{
         return a1 + d * (n - 1)
@@ -29,43 +28,45 @@ class BlockSequence {
 
         }
     }
-
+    fun chuncksSum(a1:Long, d:Long, a_n:Long, prev_a_nSum:Long ):Long{
+       return ((prev_a_nSum * (a_n - a1 + 1)) + S_n(1,1,(a_n - a1 +1))*d)
+    }
     fun solve(n:Long):Int{
         var a1 = 1L
-        val d = 1L
-        var next_n = 1L
+        var d = 1L
+        var a_n = 9L
         var prev_a_nSum = 0L
-        var checkSum = 0L
-        var lastSum = 0L
-        var sumMultiplier = 0L
-        do{
-            lastSum = checkSum
-            prev_a_nSum += (next_n - a1) * sumMultiplier
-            sumMultiplier++
-            a1 = next_n
-            next_n *=10
-            checkSum = lastSum + S_n(a1,d,next_n - 1) * sumMultiplier
-        }while (checkSum < n)
-
-        val prevChunkSum = getPrevChunksSum(a1.toString().length,d,prev_a_nSum, n - lastSum, 0, next_n -1L)
-//        return  findNOld1((n - lastSum - prevChunkSum).toInt())
-        return findN((n - lastSum - prevChunkSum).toInt(), 1)
+        var current_a_nSum = 0L
+        var tmpN = n
+        var N = n
+        while (tmpN > 0){
+            N = tmpN
+            current_a_nSum = prev_a_nSum
+            tmpN -= chuncksSum(a1,d,a_n,prev_a_nSum)
+            prev_a_nSum += (a_n - a1 + 1) * d
+            println("Sum ${prev_a_nSum}")
+            a1 *= 10
+            d++
+            a_n = a1 *10 - 1
+        }
+        val prevChunkSum = getPrevChunksSum(a1/10,d -1,a1/10,a_n/10, current_a_nSum,N)
+        return findN((N - prevChunkSum).toInt(), 1)
     }
 
-    fun getPrevChunksSum(digits: Int, d:Long, prev_a_nSum:Long, n:Long, left: Long, right:Long):Long{
-        var m = (right+left)/2L
-        var midSum = prev_a_nSum * m + S_n(1, d, m) * digits
+    fun getPrevChunksSum(a1: Long, d:Long, a_nLeft: Long, a_nRight: Long, current_a_nSum:Long, n:Long, ):Long{
+        var m = (a_nLeft+a_nRight)/2L
+        var midSum = chuncksSum(a1,d,m,current_a_nSum)
 
-        if(left >= right) {
+        if(a_nLeft >= a_nRight) {
             while (midSum >= n)
-                midSum = prev_a_nSum * (m - 1) + S_n(1, d, m-- - 1) * digits
+                midSum = chuncksSum(a1,d,m-1,current_a_nSum)
             return midSum
         }
 
         if(midSum > n)
-            return getPrevChunksSum(digits, d, prev_a_nSum, n,left, m - 1)
+            return getPrevChunksSum(a1, d, a_nLeft,m - 1, current_a_nSum,n)
         else
-            return getPrevChunksSum(digits, d, prev_a_nSum, n,m + 1, right)
+            return getPrevChunksSum(a1, d, m + 1, a_nRight, current_a_nSum,n)
 
     }
     private fun runTest(n:Long,sol:Int) = assertEquals(sol,solve(n))
@@ -91,16 +92,56 @@ class BlockSequence {
 //        runTest(99L,2)
 //        runTest(100L,1)
 //        runTest(101L,3)
-        runTest(2100L,2)
+//        runTest(2100L,2)
 //        runTest(31000L,2)
 //        runTest(999999999999999999L,4)
     //        runTest(999999999999999999L,0) //CUSTOM
-        runTest(1000000000000000000L,1)
+//        runTest(1000000000000000000L,1)
+        runTest(999999999999999993L,7)
         //        runTest(1000000000000000001L,1) //CUSTOM
         //        runTest(1000000000000000002L,2) //CUSTOM
         //        runTest(1000000000000000003L,3) //CUSTOM
 
     }
+    fun solveNew(n:Long):Int{
+        var a1 = 1L
+        var d = 1L
+        var a_n = 9L
+        var N = n
+        var tmpN = n
+        var A_nSum = 0L
+        var prev_a_nSum = 0L
+        while (tmpN > 0){
+            N = tmpN
+            tmpN -= ((prev_a_nSum * (a_n - a1 + 1)) + S_n(1,1,(a_n - a1 +1))*d)
+            prev_a_nSum += (a_n - a1 + 1) * d
+            println("Sum ${prev_a_nSum}")
+            a1 *= 10
+            d++
+            a_n = a1 *10 - 1
+        }
+//        println()
+//        N = n
+        var border = a1/10 /*1L*/
+        var sum = 0
+        while (true){
+//            print("[")
+            sum = 0
+            for (i in 1 ..  border) {
+//                print("$i,")
+                N -= i.toString().length
+                sum++
+                if(N == 0L)
+                    return (i%10).toInt()
+                else if(N < 0) {
+                    return (i / (10 * -N)).toInt()
+                }
+            }
+            border++
+        }
+//        println()
+    }
+
     fun solve0(n:Long):Int{
         var n1 = n
         var runningNumber = 0
