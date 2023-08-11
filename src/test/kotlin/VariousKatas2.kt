@@ -32,6 +32,8 @@ class BlockSequence {
        return ((prev_a_nSum * (a_n - a1 + 1)) + S_n(1,1,(a_n - a1 +1))*d)
     }
     fun solve(n:Long):Int{
+//        if(n.toString().length < 10)
+//            return solveNotOptimized(n)
         var a1 = 1L
         var d = 1L
         var a_n = 9L
@@ -63,7 +65,7 @@ class BlockSequence {
             return midSum
         }
 
-        if(midSum > n)
+        if(midSum >= n)
             return getPrevChunksSum(a1, d, a_nLeft,m - 1, current_a_nSum,n)
         else
             return getPrevChunksSum(a1, d, m + 1, a_nRight, current_a_nSum,n)
@@ -78,6 +80,9 @@ class BlockSequence {
         runTest(1L,1)
         runTest(2L,1)
         runTest(3L,2)
+        runTest(4L,1)
+        runTest(5L,2)
+        runTest(6L,3)
         runTest(7L,1)
         runTest(8L,2)
         runTest(9L,3)
@@ -101,7 +106,27 @@ class BlockSequence {
         runTest(1000000000000000000L,1)
 
     }
-    fun solveNew(n:Long):Int{
+    fun printS_nBinary(max_a_n:Long){
+        var prev_a_nSum = 0L
+        var a1 = 1L
+        var d = 1L
+        var delimiter = 9L
+        for(i in 1 .. max_a_n) {
+            val sN = prev_a_nSum + (i - a1 + 1) * d
+            if(i % delimiter == 0L) {
+                prev_a_nSum += (i - a1 + 1) * d
+                delimiter = delimiter * 10 + 9
+                d = i.toString().length.toLong() + 1
+                a1 *= 10
+
+            }
+
+//            val sN = S_n(1, 1, a_n).toInt()
+            println("%4d\t%4X\t%20s\t%4d".format(sN,sN,Integer.toBinaryString(sN.toInt()),i.toString().length))
+
+        }
+    }
+    fun solveNotOptimized(n:Long):Int{
         var a1 = 1L
         var d = 1L
         var a_n = 9L
@@ -113,20 +138,20 @@ class BlockSequence {
             N = tmpN
             tmpN -= ((prev_a_nSum * (a_n - a1 + 1)) + S_n(1,1,(a_n - a1 +1))*d)
             prev_a_nSum += (a_n - a1 + 1) * d
-            println("Sum ${prev_a_nSum}")
+//            println("Sum ${prev_a_nSum}")
             a1 *= 10
             d++
             a_n = a1 *10 - 1
         }
 //        println()
-//        N = n
-        var border = a1/10 /*1L*/
+        N = n
+        var border = /*a1/10*/ 1L
         var sum = 0
         while (true){
-//            print("[")
+            print("[")
             sum = 0
             for (i in 1 ..  border) {
-//                print("$i,")
+                print("$i,")
                 N -= i.toString().length
                 sum++
                 if(N == 0L)
