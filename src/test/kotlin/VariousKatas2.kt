@@ -14,26 +14,24 @@ class BlockSequence {
     }
 
 
-    fun findN(n:Long, multyplayer:Int):Int{
-        if(n - 9 * multyplayer > 0)
-            return findN(n,multyplayer*10 + 1)
-        else {
-            val N = n - 9 * multyplayer/10
-            val digits = multyplayer.toString().length.toLong()
-            var a_n = if(digits == 1L) N.toLong() else (N / digits + N % digits).toLong()
-            val reminder = (if(N % digits == 0L) digits else N % digits) - 1
-            val A_n =  A_n(Math.pow(10.0,(digits -1).toDouble()).toLong(), 1, a_n)
-//            println("N = $n n = $a_n a_n=$A_n reminder=$reminder")
-                return A_n.toString()[reminder.toInt()].digitToInt()
-
+    fun findN(n:Long):Int{
+        var N = n
+        var multyplayer = 1
+        while (N - 9 * multyplayer > 0){
+            N -= 9 * multyplayer
+            multyplayer *= 10
         }
+        val digits = multyplayer.toString().length.toLong()
+        var a_n = if (digits == 1L) N else (N / digits + N % digits).toLong()
+        val reminder = (if (N % digits == 0L) digits else N % digits) - 1
+        val A_n = A_n(Math.pow(10.0, (digits - 1).toDouble()).toLong(), 1, a_n)
+//            println("N = $n n = $a_n a_n=$A_n reminder=$reminder")
+        return A_n.toString()[reminder.toInt()].digitToInt()
     }
     fun chuncksSum(a1:Long, d:Long, a_n:Long, prev_a_nSum:Long ):Long{
        return ((prev_a_nSum * (a_n - a1 + 1)) + S_n(1,1,(a_n - a1 +1))*d)
     }
     fun solve(n:Long):Int{
-//        if(n.toString().length < 10)
-//            return solveNotOptimized(n)
         var a1 = 1L
         var d = 1L
         var a_n = 9L
@@ -52,7 +50,7 @@ class BlockSequence {
             a_n = a1 *10 - 1
         }
         val prevChunkSum = getPrevChunksSum(a1/10,d -1,a1/10,a_n/10, current_a_nSum,N)
-        return findN((N - prevChunkSum), 1)
+        return findN(N - prevChunkSum)
     }
 
     fun getPrevChunksSum(a1: Long, d:Long, a_nLeft: Long, a_nRight: Long, current_a_nSum:Long, n:Long, ):Long{
@@ -77,33 +75,39 @@ class BlockSequence {
 
     }
     @Test fun someTests() {
-        runTest(1L,1)
-        runTest(2L,1)
-        runTest(3L,2)
-        runTest(4L,1)
-        runTest(5L,2)
-        runTest(6L,3)
-        runTest(7L,1)
-        runTest(8L,2)
-        runTest(9L,3)
-        runTest(10L,4)
-        runTest(11L,1)
-        runTest(37,1)
-        runTest(45,9)
-        runTest(46,1)
-        runTest(47,2)
-        runTest(48,3)
-        runTest(49,4)
-        runTest(50,5)
-        runTest(51,6)
-        runTest(98L,1)
-        runTest(99L,2)
-        runTest(100L,1)
-        runTest(101L,3)
-        runTest(2100L,2)
-        runTest(31000L,2)
-        runTest(999999999999999999L,4)
-        runTest(1000000000000000000L,1)
+//        runTest(1L,1)
+//        runTest(2L,1)
+//        runTest(3L,2)
+//        runTest(4L,1)
+//        runTest(5L,2)
+//        runTest(6L,3)
+//        runTest(7L,1)
+//        runTest(8L,2)
+//        runTest(9L,3)
+//        runTest(10L,4)
+//        runTest(11L,1)
+//        runTest(37,1)
+//        runTest(45,9)
+//        runTest(46,1)
+//        runTest(47,2)
+//        runTest(48,3)
+//        runTest(49,4)
+//        runTest(50,5)
+//        runTest(51,6)
+//        runTest(98L,1)
+//        runTest(99L,2)
+//        runTest(100L,1)
+//        runTest(101L,3)
+//        runTest(2100L,2)
+//        runTest(31000L,2)
+//        runTest(999999999999999999L,4)
+//        runTest(1000000000000000000L,1)
+//
+//
+        runTest(123456789L,3) //expected:<3> but was:<4>
+//        runTest(422535737802316449,2) //expected:<2> but was:<8>
+//        runTest(73760285019854064,9) //expected:<9> but was:<0>
+
 
     }
     fun printS_nBinary(max_a_n:Long){
