@@ -84,44 +84,39 @@ class BlockSequence {
 //            solve0 is not equal to solve for 73913 ==> expected: <3> but was: <4>
          runTest(73913, 3) //9045, 64260, (609) [9] [180] - (420 left, 239 last)
 
-//        runTest(9424, 8) //9045, 192, 385 (187) [9]
-//        runTest(1L,1)
-//        runTest(2L,1)
-//        runTest(3L,2)
-//        runTest(4L,1)
-//        runTest(5L,2)
-//        runTest(6L,3)
-//        runTest(7L,1)
-//        runTest(8L,2)
-//        runTest(9L,3)
-//        runTest(10L,4)
-//        runTest(11L,1)
-//        runTest(37,1)
-//        runTest(45,9)
-//        runTest(46,1)
-//        runTest(47,2)
-//        runTest(48,3)
-//        runTest(49,4)
-//        runTest(50,5)
-//        runTest(51,6)
-//        runTest(98L,1)
-//        runTest(99L,2)
-//        runTest(100L,1)
-//        runTest(101L,3)
-//        runTest(2100L,2)
-//        runTest(31000L,2)
-//        runTest(999999999999999999L,4)
-//        runTest(1000000000000000000L,1)
-//
-//
-//        runTest(123456789L,3) //expected:<3> but was:<4>
-//        runTest(422535737802316449,2) //expected:<2> but was:<8>
-//        runTest(73760285019854064,9) //expected:<9> but was:<0>
-//
-//        runTest(1332647945,9) //expected:<9> but was:<0>
+        runTest(9424, 8) //9045, 192, 385 (187) [9]
+        runTest(1L,1)
+        runTest(2L,1)
+        runTest(3L,2)
+        runTest(4L,1)
+        runTest(5L,2)
+        runTest(6L,3)
+        runTest(7L,1)
+        runTest(8L,2)
+        runTest(9L,3)
+        runTest(10L,4)
+        runTest(11L,1)
+        runTest(37,1)
+        runTest(45,9)
+        runTest(46,1)
+        runTest(47,2)
+        runTest(48,3)
+        runTest(49,4)
+        runTest(50,5)
+        runTest(51,6)
+        runTest(98L,1)
+        runTest(99L,2)
+        runTest(100L,1)
+        runTest(101L,3)
+        runTest(2100L,2)
+        runTest(31000L,2)
+        runTest(999999999999999999L,4)
+        runTest(1000000000000000000L,1)
 
 
-
+        runTest(123456789L,3) //expected:<3> but was:<4>
+        runTest(422535737802316449,2) //expected:<2> but was:<8>
+        runTest(73760285019854064,9) //expected:<9> but was:<0>
 
 //        printS_nBinary(120)
 
