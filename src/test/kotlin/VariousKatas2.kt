@@ -13,19 +13,14 @@ class BlockSequence {
         return a1 + d * (n - 1)
     }
 
+    fun findN(n:Long, a1:Long, _a_n:Long, digits:Long):Int{
+        var tmpN = n - (_a_n - a1 + 1)*digits
+        if(tmpN > 0 )
+            return findN(tmpN,a1*10,_a_n*10 + 9,digits + 1)
 
-    fun findN(n:Long):Int{
-        var N = n
-        var multyplayer = 1
-        while (N - 9 * multyplayer > 0){
-            N -= 9 * multyplayer
-            multyplayer *= 10
-        }
-        val digits = multyplayer.toString().length.toLong()
-        var a_n = if (digits == 1L) N else (N / digits + N % digits).toLong()
-        val reminder = (if (N % digits == 0L) digits else N % digits) - 1
+        val a_n = if (digits == 1L) n else (n / digits + n % digits).toLong()
+        val reminder = (if (n % digits == 0L) digits else n % digits) - 1
         val A_n = A_n(Math.pow(10.0, (digits - 1).toDouble()).toLong(), 1, a_n)
-//            println("N = $n n = $a_n a_n=$A_n reminder=$reminder")
         return A_n.toString()[reminder.toInt()].digitToInt()
     }
     fun chuncksSum(a1:Long, d:Long, a_n:Long, prev_a_nSum:Long ):Long{
@@ -44,13 +39,12 @@ class BlockSequence {
             current_a_nSum = prev_a_nSum
             tmpN -= chuncksSum(a1,d,a_n,prev_a_nSum)
             prev_a_nSum += (a_n - a1 + 1) * d
-//            println("Sum ${prev_a_nSum}")
             a1 *= 10
             d++
             a_n = a1 *10 - 1
         }
         val prevChunkSum = getPrevChunksSum(a1/10,d -1,a1/10,a_n/10, current_a_nSum,N)
-        return findN(N - prevChunkSum)
+        return findN(N - prevChunkSum,1,9,1)
     }
 
     fun getPrevChunksSum(a1: Long, d:Long, a_nLeft: Long, a_nRight: Long, current_a_nSum:Long, n:Long, ):Long{
@@ -73,8 +67,19 @@ class BlockSequence {
 
     @Test fun randomTimeTest(){
 
+        for(i in 1..1000) {
+            var N = (Math.random() * 89999 + 10000).toLong()
+//            N = 1332647945
+            assertEquals(solveNotOptimized(N), solve(N), "solve0 is not equal to solve for $N")
+            return
+        }
+
+//        solve0 is not equal to solve for 9424 ==> expected: <8> but was: <1>
     }
     @Test fun someTests() {
+
+        runTest(9424, 10) // solve0 is not equal to solve for 92470 ==> expected: <10> but was: <2>
+//        runTest(9424, 8) //9045, 192, 385 (187) [9]
 //        runTest(1L,1)
 //        runTest(2L,1)
 //        runTest(3L,2)
@@ -104,9 +109,16 @@ class BlockSequence {
 //        runTest(1000000000000000000L,1)
 //
 //
-        runTest(123456789L,3) //expected:<3> but was:<4>
+//        runTest(123456789L,3) //expected:<3> but was:<4>
 //        runTest(422535737802316449,2) //expected:<2> but was:<8>
 //        runTest(73760285019854064,9) //expected:<9> but was:<0>
+//
+//        runTest(1332647945,9) //expected:<9> but was:<0>
+
+
+
+
+//        printS_nBinary(120)
 
 
     }
@@ -172,16 +184,16 @@ class BlockSequence {
     fun solve0(n:Long):Int{
         var n1 = n
         var runningNumber = 0
-        print("[")
+//        print("[")
         while (true){
             runningNumber++
             for(v in 1 .. runningNumber) {
-                print("${v}")
+//                print("${v}")
                 n1 -= 1 * (if(v/10 > 0) 2 else 1)
                 if(n1 <= 0L)
                     return v
             }
-            print(",")
+//            print(",")
         }
     }
 
