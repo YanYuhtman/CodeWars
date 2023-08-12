@@ -18,7 +18,7 @@ class BlockSequence {
         if(tmpN > 0 )
             return findN(tmpN,a1*10,_a_n*10 + 9,digits + 1)
 
-        val a_n = if (digits == 1L) n else (n / digits + n % digits).toLong()
+        val a_n = if (digits == 1L) n else (n / digits + (if(n % digits > 0) 1L else 0L))
         val reminder = (if (n % digits == 0L) digits else n % digits) - 1
         val A_n = A_n(Math.pow(10.0, (digits - 1).toDouble()).toLong(), 1, a_n)
         return A_n.toString()[reminder.toInt()].digitToInt()
@@ -67,18 +67,23 @@ class BlockSequence {
 
     @Test fun randomTimeTest(){
 
-        for(i in 1..1000) {
+        for(i in 1..100000) {
             var N = (Math.random() * 89999 + 10000).toLong()
-//            N = 1332647945
+//            N = 73912
+            N = 73913
+//            N = 73914
             assertEquals(solveNotOptimized(N), solve(N), "solve0 is not equal to solve for $N")
             return
+//            return
+
         }
 
 //        solve0 is not equal to solve for 9424 ==> expected: <8> but was: <1>
     }
     @Test fun someTests() {
+//            solve0 is not equal to solve for 73913 ==> expected: <3> but was: <4>
+         runTest(73913, 3) //9045, 64260, (609) [9] [180] - (420 left, 239 last)
 
-        runTest(9424, 10) // solve0 is not equal to solve for 92470 ==> expected: <10> but was: <2>
 //        runTest(9424, 8) //9045, 192, 385 (187) [9]
 //        runTest(1L,1)
 //        runTest(2L,1)
@@ -173,7 +178,7 @@ class BlockSequence {
                 if(N == 0L)
                     return (i%10).toInt()
                 else if(N < 0) {
-                    return (i / (10 * -N)).toInt()
+                        return ((i / Math.pow(10.0,(-N).toDouble()).toInt()) % 10).toInt()
                 }
             }
             border++
