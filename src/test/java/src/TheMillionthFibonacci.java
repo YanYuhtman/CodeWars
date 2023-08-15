@@ -165,20 +165,20 @@ public class TheMillionthFibonacci {
     }
     @Test
     void testQuickFibonachiBigInteger() {
-//        assertEquals(BigInteger.ZERO, quickFibonacci(BigInteger.ZERO));
-//        assertEquals(BigInteger.ONE, quickFibonacci(BigInteger.TWO));
-//        assertEquals(BigInteger.TWO, quickFibonacci(BigInteger.valueOf(3)));
-//        assertEquals(BigInteger.valueOf(3), quickFibonacci(BigInteger.valueOf(4)));
-//        assertEquals(BigInteger.valueOf(5), quickFibonacci(BigInteger.valueOf(5)));
-//        assertEquals(BigInteger.valueOf(8), quickFibonacci(BigInteger.valueOf(6)));
-//        assertEquals(BigInteger.valueOf(13), quickFibonacci(BigInteger.valueOf(7)));
-//        assertEquals(BigInteger.valueOf(21), quickFibonacci(BigInteger.valueOf(8)));
-//        assertEquals(BigInteger.valueOf(34), quickFibonacci(BigInteger.valueOf(9)));
-//        assertEquals(BigInteger.valueOf(55), quickFibonacci(BigInteger.valueOf(10)));
-//        assertEquals(BigInteger.valueOf(89), quickFibonacci(BigInteger.valueOf(11)));
-//        assertEquals(BigInteger.valueOf(144), quickFibonacci(BigInteger.valueOf(12)));
-//        assertEquals(BigInteger.valueOf(75025), quickFibonacci(BigInteger.valueOf(25)));
-//        assertEquals(BigInteger.valueOf(832040), quickFibonacci(BigInteger.valueOf(30)));
+        assertEquals(BigInteger.ZERO, quickFibonacci(BigInteger.ZERO));
+        assertEquals(BigInteger.ONE, quickFibonacci(BigInteger.TWO));
+        assertEquals(BigInteger.TWO, quickFibonacci(BigInteger.valueOf(3)));
+        assertEquals(BigInteger.valueOf(3), quickFibonacci(BigInteger.valueOf(4)));
+        assertEquals(BigInteger.valueOf(5), quickFibonacci(BigInteger.valueOf(5)));
+        assertEquals(BigInteger.valueOf(8), quickFibonacci(BigInteger.valueOf(6)));
+        assertEquals(BigInteger.valueOf(13), quickFibonacci(BigInteger.valueOf(7)));
+        assertEquals(BigInteger.valueOf(21), quickFibonacci(BigInteger.valueOf(8)));
+        assertEquals(BigInteger.valueOf(34), quickFibonacci(BigInteger.valueOf(9)));
+        assertEquals(BigInteger.valueOf(55), quickFibonacci(BigInteger.valueOf(10)));
+        assertEquals(BigInteger.valueOf(89), quickFibonacci(BigInteger.valueOf(11)));
+        assertEquals(BigInteger.valueOf(144), quickFibonacci(BigInteger.valueOf(12)));
+        assertEquals(BigInteger.valueOf(75025), quickFibonacci(BigInteger.valueOf(25)));
+        assertEquals(BigInteger.valueOf(832040), quickFibonacci(BigInteger.valueOf(30)));
         assertEquals(BigInteger.valueOf(102334155L), quickFibonacci((BigInteger.valueOf(40))));
         assertEquals(BigInteger.valueOf(2111485077978050L), quickFibonacci(BigInteger.valueOf(75)));
         assertEquals(BigInteger.valueOf(12586269025L), quickFibonacci(BigInteger.valueOf(50)));
