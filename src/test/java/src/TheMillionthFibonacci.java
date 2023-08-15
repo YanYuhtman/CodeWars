@@ -1,10 +1,10 @@
 import org.junit.jupiter.api.Test;
-
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 public class TheMillionthFibonacci {
 
@@ -93,11 +93,12 @@ public class TheMillionthFibonacci {
 
     static BigInteger quickFibonacci(BigInteger n) {
         BigInteger[] f_n = new BigInteger[]{BigInteger.ZERO, BigInteger.ONE, BigInteger.ONE};
-        if(n.intValue() <= 3)
-            return f_n[n.intValue()-1];
+        BigInteger[] tmpF_n = null;
+        if(n.intValue() < 3)
+            return f_n[n.intValue()];
 
         for (BigInteger i = BigInteger.ONE; n.subtract(BigInteger.ONE).compareTo(i) > 0;) {
-            BigInteger[] tmpF_n = Arrays.copyOf(f_n, f_n.length);
+            tmpF_n = Arrays.copyOf(f_n, f_n.length);
             if (i.mod(BigInteger.TWO).equals(BigInteger.ZERO) && n.subtract(BigInteger.ONE).compareTo(i.add(i.multiply(BigInteger.TWO))) > 0) {
                 f_n[0] = tmpF_n[0].multiply(tmpF_n[0]).add(tmpF_n[1].multiply(tmpF_n[1]));
                 f_n[1] = tmpF_n[1].multiply(tmpF_n[2]).add(tmpF_n[1].multiply(tmpF_n[0]));
@@ -141,26 +142,29 @@ public class TheMillionthFibonacci {
     }
     @Test
     void testQuickFibonachiBigInteger() {
-//        assertEquals(BigInteger.ZERO, quickFibonacci(BigInteger.ONE));
-//        assertEquals(BigInteger.ONE, quickFibonacci(BigInteger.TWO));
-//        assertEquals(BigInteger.ONE, quickFibonacci(BigInteger.valueOf(3)));
-//        assertEquals(BigInteger.valueOf(3), quickFibonacci(BigInteger.valueOf(4)));
-//        assertEquals(BigInteger.valueOf(5), quickFibonacci(BigInteger.valueOf(5)));
-//        assertEquals(BigInteger.valueOf(8), quickFibonacci(BigInteger.valueOf(6)));
-//        assertEquals(BigInteger.valueOf(13), quickFibonacci(BigInteger.valueOf(7)));
-//        assertEquals(BigInteger.valueOf(21), quickFibonacci(BigInteger.valueOf(8)));
-//        assertEquals(BigInteger.valueOf(34), quickFibonacci(BigInteger.valueOf(9)));
-//        assertEquals(BigInteger.valueOf(55), quickFibonacci(BigInteger.valueOf(10)));
-//        assertEquals(BigInteger.valueOf(89), quickFibonacci(BigInteger.valueOf(11)));
-//        assertEquals(BigInteger.valueOf(144), quickFibonacci(BigInteger.valueOf(12)));
-//        assertEquals(BigInteger.valueOf(75025), quickFibonacci(BigInteger.valueOf(25)));
-//        assertEquals(BigInteger.valueOf(832040), quickFibonacci(BigInteger.valueOf(30)));
-//        assertEquals(BigInteger.valueOf(102334155L), quickFibonacci((BigInteger.valueOf(40))));
-//        assertEquals(BigInteger.valueOf(12586269025L), quickFibonacci(BigInteger.valueOf(50)));
-//        assertEquals(BigInteger.valueOf(2111485077978050L), quickFibonacci(BigInteger.valueOf(75)));
-//        assertEquals(new BigInteger("222232244629420445529739893461909967206666939096499764990979600"), quickFibonacci(BigInteger.valueOf(300)));
+        assertEquals(BigInteger.ZERO, quickFibonacci(BigInteger.ZERO));
+        assertEquals(BigInteger.ONE, quickFibonacci(BigInteger.TWO));
+        assertEquals(BigInteger.TWO, quickFibonacci(BigInteger.valueOf(3)));
+        assertEquals(BigInteger.valueOf(3), quickFibonacci(BigInteger.valueOf(4)));
+        assertEquals(BigInteger.valueOf(5), quickFibonacci(BigInteger.valueOf(5)));
+        assertEquals(BigInteger.valueOf(8), quickFibonacci(BigInteger.valueOf(6)));
+        assertEquals(BigInteger.valueOf(13), quickFibonacci(BigInteger.valueOf(7)));
+        assertEquals(BigInteger.valueOf(21), quickFibonacci(BigInteger.valueOf(8)));
+        assertEquals(BigInteger.valueOf(34), quickFibonacci(BigInteger.valueOf(9)));
+        assertEquals(BigInteger.valueOf(55), quickFibonacci(BigInteger.valueOf(10)));
+        assertEquals(BigInteger.valueOf(89), quickFibonacci(BigInteger.valueOf(11)));
+        assertEquals(BigInteger.valueOf(144), quickFibonacci(BigInteger.valueOf(12)));
+        assertEquals(BigInteger.valueOf(75025), quickFibonacci(BigInteger.valueOf(25)));
+        assertEquals(BigInteger.valueOf(832040), quickFibonacci(BigInteger.valueOf(30)));
+        assertEquals(BigInteger.valueOf(102334155L), quickFibonacci((BigInteger.valueOf(40))));
+        assertEquals(BigInteger.valueOf(12586269025L), quickFibonacci(BigInteger.valueOf(50)));
+        assertEquals(BigInteger.valueOf(2111485077978050L), quickFibonacci(BigInteger.valueOf(75)));
+        assertEquals(new BigInteger("222232244629420445529739893461909967206666939096499764990979600"), quickFibonacci(BigInteger.valueOf(300)));
 
-        assertEquals(BigInteger.valueOf(1), findNOf(BigInteger.ONE));
+//        assertEquals(new BigInteger("222232244629420445529739893461909967206666939096499764990979600"), quickFibonacci(BigInteger.valueOf(2000000)));
+
+
+        assertEquals(BigInteger.valueOf(1), findNOf(BigInteger.ZERO));
         assertEquals(BigInteger.valueOf(2), findNOf(BigInteger.ONE));
         assertEquals(BigInteger.valueOf(4), findNOf(BigInteger.valueOf(3)));
         assertEquals(BigInteger.valueOf(5), findNOf(BigInteger.valueOf(5)));
@@ -173,10 +177,42 @@ public class TheMillionthFibonacci {
 
 
     //https://www.codewars.com/kata/53d40c1e2f13e331fc000c26/train/java
+
+    static LinkedList<BigInteger> fCache = new LinkedList<>(Arrays.asList(
+            new BigInteger[]{BigInteger.valueOf(1),BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(6), BigInteger.valueOf(24), BigInteger.valueOf(120),
+                    new BigInteger("720"), new BigInteger("5040"), new BigInteger("40320"), new BigInteger("362880"), new BigInteger("3628800"),
+                    new BigInteger("39916800"), new BigInteger("479001600"), new BigInteger("6227020800"), new BigInteger("87178291200"),
+                    new BigInteger("1307674368000"), new BigInteger("20922789888000"), new BigInteger("355687428096000"), new BigInteger("6402373705728000"),
+                    new BigInteger("121645100408832000"), new BigInteger("2432902008176640000"), new BigInteger("51090942171709440000"),
+                    new BigInteger("1124000727777607680000"), new BigInteger("25852016738884976640000"), new BigInteger("620448401733239439360000"),
+                    new BigInteger("15511210043330985984000000"), new BigInteger("403291461126605635584000000"), new BigInteger("10888869450418352160768000000"),
+                    new BigInteger("304888344611713860501504000000"), new BigInteger("8841761993739701954543616000000"), new BigInteger("265252859812191058636308480000000"),
+                    new BigInteger("8222838654177922817725562880000000"), new BigInteger("263130836933693530167218012160000000"), new BigInteger("8683317618811886495518194401280000000"),
+                    new BigInteger("295232799039604140847618609643520000000"), new BigInteger("10333147966386144929666651337523200000000"), new BigInteger("371993326789901217467999448150835200000000"),
+                    new BigInteger("13763753091226345046315979581580902400000000"), new BigInteger("523022617466601111760007224100074291200000000"), new BigInteger("20397882081197443358640281739902897356800000000"),
+                    new BigInteger("815915283247897734345611269596115894272000000000"), new BigInteger("33452526613163807108170062053440751665152000000000"), new BigInteger("1405006117752879898543142606244511569936384000000000"),
+                    new BigInteger("60415263063373835637355132068513997507264512000000000"), new BigInteger("2658271574788448768043625811014615890319638528000000000"), new BigInteger("119622220865480194561963161495657715064383733760000000000"),
+                    new BigInteger("5502622159812088949850305428800254892961651752960000000000"), new BigInteger("258623241511168180642964355153611979969197632389120000000000"), new BigInteger("12413915592536072670862289047373375038521486354677760000000000"),
+                    new BigInteger("608281864034267560872252163321295376887552831379210240000000000"), new BigInteger("30414093201713378043612608166064768844377641568960512000000000000"),
+            }
+    ));
     static BigInteger factorial(BigInteger v) {
-        if (v.compareTo(BigInteger.ONE) <= 0)
+        if(v == BigInteger.ZERO)
             return BigInteger.ONE;
-        return factorial(v.subtract(BigInteger.ONE)).multiply(v);
+
+        if(fCache.size() > v.intValueExact())
+            return fCache.get(v.intValue());
+
+        BigInteger initValue = fCache.get(fCache.size() - 1);
+        BigInteger n = BigInteger.valueOf(fCache.size());
+
+        while (v.compareTo(n) >= 0) {
+            initValue = initValue.multiply(n);
+            fCache.add(initValue);
+            n = n.add(BigInteger.ONE);
+//            System.out.print("new BigInteger(\"" + fCache.get(fCache.size() - 1) + "\"), ");
+        }
+        return fCache.get(fCache.size() - 1);
     }
 
     static BigInteger nCr(BigInteger n, BigInteger k) {
@@ -230,15 +266,27 @@ public class TheMillionthFibonacci {
         return result;
     }
 
-    public static BigInteger fib(BigInteger F_n) {
-        return findNOf(F_n.abs()).multiply(BigInteger.valueOf(F_n.signum()));
-//        int sign = n.compareTo(BigInteger.ZERO) < 0 ? -1 : 1;
-//        return BigInteger.valueOf(((long) Math.floor(nApproximation(n.multiply(BigInteger.valueOf(sign))))) * sign);
+    public static BigInteger fib(BigInteger n) {
+        Function<BigInteger,BigInteger> f = val -> F_n(val);
 
+        if(n.signum() < 0 && n.mod(BigInteger.TWO) != BigInteger.ZERO){
+            return f.apply(n.abs());
+        }else
+            return f.apply(n.abs()).multiply(BigInteger.valueOf(n.signum()));
+
+
+    }
+    @Test
+    void testFibonacci(){
+        assertEquals(new BigInteger("720"),factorial(BigInteger.valueOf(6)));
+        assertEquals(new BigInteger("2432902008176640000"),factorial(BigInteger.valueOf(20)));
+        assertEquals(new BigInteger("30414093201713378043612608166064768844377641568960512000000000000"),factorial(BigInteger.valueOf(50)));
+        assertEquals(new BigInteger("8320987112741390144276341183223364380754172606361245952449277696409600000000000000"),factorial(BigInteger.valueOf(60)));
 
     }
 
     public static BigInteger combineBigInteger(long[] value) {
+
         return BigInteger.valueOf(value[0])
                 .multiply(BigInteger.valueOf(value[1])).add(BigInteger.valueOf(value[2]));
 
