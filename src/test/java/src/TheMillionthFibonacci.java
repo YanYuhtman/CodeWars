@@ -91,13 +91,21 @@ public class TheMillionthFibonacci {
         assertEquals(30, findNOf(832040));
     }
 
+    static BigInteger lastFbIndex;
+    static BigInteger[] lastFbValue;
     static BigInteger quickFibonacci(BigInteger n) {
         BigInteger[] f_n = new BigInteger[]{BigInteger.ZERO, BigInteger.ONE, BigInteger.ONE};
         BigInteger[] tmpF_n = null;
         if(n.intValue() < 3)
             return f_n[n.intValue()];
 
-        for (BigInteger i = BigInteger.ONE; n.subtract(BigInteger.ONE).compareTo(i) > 0;) {
+        BigInteger i = BigInteger.ONE;
+        if(lastFbValue != null && n.compareTo(lastFbIndex) > 0){
+            f_n = lastFbValue;
+            i = lastFbIndex;
+        }
+
+        while (n.subtract(BigInteger.ONE).compareTo(i) > 0) {
             tmpF_n = Arrays.copyOf(f_n, f_n.length);
             if (i.mod(BigInteger.TWO).equals(BigInteger.ZERO) && n.subtract(BigInteger.ONE).compareTo(i.add(i.multiply(BigInteger.TWO))) > 0) {
                 f_n[0] = tmpF_n[0].multiply(tmpF_n[0]).add(tmpF_n[1].multiply(tmpF_n[1]));
@@ -111,6 +119,8 @@ public class TheMillionthFibonacci {
                 i = i.add(BigInteger.ONE);
             }
         }
+        lastFbValue = f_n;
+        lastFbIndex = i;
         return f_n[2];
     }
 
@@ -267,12 +277,15 @@ public class TheMillionthFibonacci {
     }
 
     public static BigInteger fib(BigInteger n) {
-        Function<BigInteger,BigInteger> f = val -> F_n(val);
 
-        if(n.signum() < 0 && n.mod(BigInteger.TWO) != BigInteger.ZERO){
-            return f.apply(n.abs());
-        }else
-            return f.apply(n.abs()).multiply(BigInteger.valueOf(n.signum()));
+            System.out.println(n);
+            Function<BigInteger, BigInteger> f = val -> F_n(val);
+
+            if (n.signum() < 0 && n.mod(BigInteger.TWO) != BigInteger.ZERO) {
+                return f.apply(n.abs());
+            } else
+                return f.apply(n.abs()).multiply(BigInteger.valueOf(n.signum()));
+
 
 
     }
