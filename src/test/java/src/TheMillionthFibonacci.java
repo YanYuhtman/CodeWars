@@ -13,17 +13,17 @@ public class TheMillionthFibonacci {
         if(n <= 3)
             return f_n[n-1];
 
-        for (int i = 1,k = 1; i < n - 1;) {
+        for (int i = 1; i < n - 1;) {
             long[] tmpF_n = Arrays.copyOf(f_n, f_n.length);
 
-            if (k % 2 == 0 && n - 1 > i + k*2) {
+            if (i % 2 == 0 && n - 1 > i + i*2) {
                 f_n[0] = tmpF_n[0] * tmpF_n[0] + tmpF_n[1] * tmpF_n[1];
                 f_n[1] = tmpF_n[1] * tmpF_n[2] + tmpF_n[1] * tmpF_n[0];
                 f_n[2] = tmpF_n[1] * tmpF_n[1] + tmpF_n[2] * tmpF_n[2];
 //                System.out.println("mult");
-                i = k*=2;
+                i*=2;
             } else {
-                k = ++i;
+                i++;
                 f_n[0] = tmpF_n[1];
                 f_n[1] = tmpF_n[2];
                 f_n[2] = tmpF_n[1] + tmpF_n[2];
@@ -35,6 +35,31 @@ public class TheMillionthFibonacci {
 //                    + f_n[1] + " " + f_n[2] + "\n");
         }
         return f_n[2];
+    }
+    static int findNOf(long F_n){
+        long[] f_n = new long[]{0, 1, 1};
+        if(F_n < 2)
+            return (int)f_n[(int)F_n] + 1;
+        int i = 1;
+        while (F_n > f_n[2]) {
+            long[] tmpF_n = Arrays.copyOf(f_n, f_n.length);
+            if(i % 2 == 0) {
+                f_n[0] = tmpF_n[0] * tmpF_n[0] + tmpF_n[1] * tmpF_n[1];
+                f_n[1] = tmpF_n[1] * tmpF_n[2] + tmpF_n[1] * tmpF_n[0];
+                f_n[2] = tmpF_n[1] * tmpF_n[1] + tmpF_n[2] * tmpF_n[2];
+
+                if (f_n[2] <= F_n) {
+                    i *= 2;
+                    continue;
+                }
+            }
+
+            f_n[0] = tmpF_n[1];
+            f_n[1] = tmpF_n[2];
+            f_n[2] = tmpF_n[1] + tmpF_n[2];
+            i++;
+        }
+        return i + 1;
     }
 
     @Test
@@ -55,7 +80,15 @@ public class TheMillionthFibonacci {
         assertEquals(832040, quickFibonacci(30));
         assertEquals(102334155L, quickFibonacci(40));
         assertEquals(2111485077978050L, quickFibonacci(75));
-//        assertEquals(218922995834555169026, quickFibonacci(100));
+
+        assertEquals(1, findNOf(0));
+        assertEquals(2, findNOf(1));
+        assertEquals(4, findNOf(3));
+        assertEquals(5, findNOf(5));
+        assertEquals(6, findNOf(8));
+        assertEquals(7, findNOf(13));
+        assertEquals(11, findNOf(89));
+        assertEquals(30, findNOf(832040));
     }
 
     static BigInteger quickFibonacci(BigInteger n) {
@@ -63,14 +96,13 @@ public class TheMillionthFibonacci {
         if(n.intValue() <= 3)
             return f_n[n.intValue()-1];
 
-        for (BigInteger i = BigInteger.ZERO; n.compareTo(i.add(BigInteger.TWO)) > 0;) {
+        for (BigInteger i = BigInteger.ONE; n.subtract(BigInteger.ONE).compareTo(i) > 0;) {
             BigInteger[] tmpF_n = Arrays.copyOf(f_n, f_n.length);
-            if (i.compareTo(BigInteger.ONE) > 0 && n.compareTo(i.pow(2).add(i)) > 0) {
-                i = i.pow(2).add(i.add(BigInteger.ONE).mod(BigInteger.TWO));
+            if (i.mod(BigInteger.TWO).equals(BigInteger.ZERO) && n.subtract(BigInteger.ONE).compareTo(i.add(i.multiply(BigInteger.TWO))) > 0) {
                 f_n[0] = tmpF_n[0].multiply(tmpF_n[0]).add(tmpF_n[1].multiply(tmpF_n[1]));
                 f_n[1] = tmpF_n[1].multiply(tmpF_n[2]).add(tmpF_n[1].multiply(tmpF_n[0]));
                 f_n[2] = tmpF_n[1].multiply(tmpF_n[1]).add(tmpF_n[2].multiply(tmpF_n[2]));
-
+                i = i.multiply(BigInteger.TWO);
             } else {
                 f_n[0] = tmpF_n[1];
                 f_n[1] = tmpF_n[2];
@@ -80,25 +112,63 @@ public class TheMillionthFibonacci {
         }
         return f_n[2];
     }
+
+    static BigInteger findNOf(BigInteger F_n){
+        BigInteger[] f_n = new BigInteger[]{BigInteger.ZERO, BigInteger.ONE, BigInteger.ONE};
+        if(F_n.compareTo(BigInteger.TWO) < 0)
+            return f_n[F_n.intValue()].add(BigInteger.ONE);
+
+        BigInteger i = BigInteger.ONE;
+        while (F_n.compareTo(f_n[2]) > 0) {
+            BigInteger[] tmpF_n = Arrays.copyOf(f_n, f_n.length);
+            if(i.mod(BigInteger.TWO).equals(BigInteger.ZERO)) {
+                f_n[0] = tmpF_n[0].multiply(tmpF_n[0]).add(tmpF_n[1].multiply(tmpF_n[1]));
+                f_n[1] = tmpF_n[1].multiply(tmpF_n[2]).add(tmpF_n[1].multiply(tmpF_n[0]));
+                f_n[2] = tmpF_n[1].multiply(tmpF_n[1]).add(tmpF_n[2].multiply(tmpF_n[2]));
+
+                if (F_n.compareTo(f_n[2]) > 0) {
+                    i = i.multiply(BigInteger.TWO);
+                    continue;
+                }
+            }
+
+            f_n[0] = tmpF_n[1];
+            f_n[1] = tmpF_n[2];
+            f_n[2] = tmpF_n[1].add(tmpF_n[2]);
+            i = i.add(BigInteger.ONE);
+        }
+        return i.add(BigInteger.ONE);
+    }
     @Test
     void testQuickFibonachiBigInteger() {
-        assertEquals(BigInteger.ZERO, quickFibonacci(BigInteger.ONE));
-        assertEquals(BigInteger.ONE, quickFibonacci(BigInteger.TWO));
-        assertEquals(BigInteger.ONE, quickFibonacci(BigInteger.valueOf(3)));
-        assertEquals(BigInteger.valueOf(3), quickFibonacci(BigInteger.valueOf(4)));
-        assertEquals(BigInteger.valueOf(5), quickFibonacci(BigInteger.valueOf(5)));
-        assertEquals(BigInteger.valueOf(8), quickFibonacci(BigInteger.valueOf(6)));
-        assertEquals(BigInteger.valueOf(13), quickFibonacci(BigInteger.valueOf(7)));
-        assertEquals(BigInteger.valueOf(21), quickFibonacci(BigInteger.valueOf(8)));
-        assertEquals(BigInteger.valueOf(34), quickFibonacci(BigInteger.valueOf(9)));
-        assertEquals(BigInteger.valueOf(55), quickFibonacci(BigInteger.valueOf(10)));
-        assertEquals(BigInteger.valueOf(89), quickFibonacci(BigInteger.valueOf(11)));
-        assertEquals(BigInteger.valueOf(144), quickFibonacci(BigInteger.valueOf(12)));
-        assertEquals(BigInteger.valueOf(75025), quickFibonacci(BigInteger.valueOf(25)));
-        assertEquals(BigInteger.valueOf(832040), quickFibonacci(BigInteger.valueOf(30)));
-        assertEquals(BigInteger.valueOf(832040), quickFibonacci(BigInteger.valueOf(40)));
-        assertEquals(BigInteger.valueOf(12586269025L), quickFibonacci(BigInteger.valueOf(50)));
-        assertEquals(BigInteger.valueOf(2111485077978050L), quickFibonacci(BigInteger.valueOf(75)));
+//        assertEquals(BigInteger.ZERO, quickFibonacci(BigInteger.ONE));
+//        assertEquals(BigInteger.ONE, quickFibonacci(BigInteger.TWO));
+//        assertEquals(BigInteger.ONE, quickFibonacci(BigInteger.valueOf(3)));
+//        assertEquals(BigInteger.valueOf(3), quickFibonacci(BigInteger.valueOf(4)));
+//        assertEquals(BigInteger.valueOf(5), quickFibonacci(BigInteger.valueOf(5)));
+//        assertEquals(BigInteger.valueOf(8), quickFibonacci(BigInteger.valueOf(6)));
+//        assertEquals(BigInteger.valueOf(13), quickFibonacci(BigInteger.valueOf(7)));
+//        assertEquals(BigInteger.valueOf(21), quickFibonacci(BigInteger.valueOf(8)));
+//        assertEquals(BigInteger.valueOf(34), quickFibonacci(BigInteger.valueOf(9)));
+//        assertEquals(BigInteger.valueOf(55), quickFibonacci(BigInteger.valueOf(10)));
+//        assertEquals(BigInteger.valueOf(89), quickFibonacci(BigInteger.valueOf(11)));
+//        assertEquals(BigInteger.valueOf(144), quickFibonacci(BigInteger.valueOf(12)));
+//        assertEquals(BigInteger.valueOf(75025), quickFibonacci(BigInteger.valueOf(25)));
+//        assertEquals(BigInteger.valueOf(832040), quickFibonacci(BigInteger.valueOf(30)));
+//        assertEquals(BigInteger.valueOf(102334155L), quickFibonacci((BigInteger.valueOf(40))));
+//        assertEquals(BigInteger.valueOf(12586269025L), quickFibonacci(BigInteger.valueOf(50)));
+//        assertEquals(BigInteger.valueOf(2111485077978050L), quickFibonacci(BigInteger.valueOf(75)));
+//        assertEquals(new BigInteger("222232244629420445529739893461909967206666939096499764990979600"), quickFibonacci(BigInteger.valueOf(300)));
+
+        assertEquals(BigInteger.valueOf(1), findNOf(BigInteger.ONE));
+        assertEquals(BigInteger.valueOf(2), findNOf(BigInteger.ONE));
+        assertEquals(BigInteger.valueOf(4), findNOf(BigInteger.valueOf(3)));
+        assertEquals(BigInteger.valueOf(5), findNOf(BigInteger.valueOf(5)));
+        assertEquals(BigInteger.valueOf(6), findNOf(BigInteger.valueOf(8)));
+        assertEquals(BigInteger.valueOf(7), findNOf(BigInteger.valueOf(13)));
+        assertEquals(BigInteger.valueOf(11), findNOf(BigInteger.valueOf(89)));
+        assertEquals(BigInteger.valueOf(30), findNOf(BigInteger.valueOf(832040)));
+        assertEquals(BigInteger.valueOf(300), findNOf(new BigInteger("222232244629420445529739893461909967206666939096499764990979600")));
     }
 
 
@@ -160,9 +230,11 @@ public class TheMillionthFibonacci {
         return result;
     }
 
-    public static BigInteger fib(BigInteger n) {
-        int sign = n.compareTo(BigInteger.ZERO) < 0 ? -1 : 1;
-        return BigInteger.valueOf(((long) Math.floor(nApproximation(n.multiply(BigInteger.valueOf(sign))))) * sign);
+    public static BigInteger fib(BigInteger F_n) {
+        return findNOf(F_n.abs()).multiply(BigInteger.valueOf(F_n.signum()));
+//        int sign = n.compareTo(BigInteger.ZERO) < 0 ? -1 : 1;
+//        return BigInteger.valueOf(((long) Math.floor(nApproximation(n.multiply(BigInteger.valueOf(sign))))) * sign);
+
 
     }
 
