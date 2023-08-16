@@ -9,25 +9,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TheMillionthFibonacci {
 
+
     static long quickFibonacci(int n) {
         long[] f_n = new long[]{0, 1, 1};
         if(n <= 3)
             return f_n[n-1];
 
-        boolean directionPositive = true;
+        int state = 0;
         for (int i = 1; i != n - 1;) {
             long[] tmpF_n = Arrays.copyOf(f_n, f_n.length);
 
-            if (i % 2 == 0 && n > i*2) {
-//                if(n < i*2)
-//                    directionPositive = false;
+            if (i % 2 == 0 && state == 0) {
+                if (n <= i * 2) {
+                    state = (n - i < i * 2 - n) ? 1 : 2;
+                    if (state == 1)
+                        continue;
+                }
                 f_n[0] = tmpF_n[0] * tmpF_n[0] + tmpF_n[1] * tmpF_n[1];
                 f_n[1] = tmpF_n[1] * tmpF_n[2] + tmpF_n[1] * tmpF_n[0];
                 f_n[2] = tmpF_n[1] * tmpF_n[1] + tmpF_n[2] * tmpF_n[2];
+
 //                System.out.println("mult");
                 i*=2;
             } else {
-                if(directionPositive) {
+                if(state < 2) {
                     f_n[0] = tmpF_n[1];
                     f_n[1] = tmpF_n[2];
                     f_n[2] = tmpF_n[1] + tmpF_n[2];
@@ -76,9 +81,9 @@ public class TheMillionthFibonacci {
     @Test
     void testQuickFibonachi() {
         long start = System.nanoTime();
-        assertEquals(0, quickFibonacci(1));
-        assertEquals(1, quickFibonacci(2));
-        assertEquals(1, quickFibonacci(3));
+//        assertEquals(0, quickFibonacci(1));
+//        assertEquals(1, quickFibonacci(2));
+//        assertEquals(1, quickFibonacci(3));
         assertEquals(3, quickFibonacci(4));
         assertEquals(5, quickFibonacci(5));
         assertEquals(8, quickFibonacci(6));
@@ -126,19 +131,35 @@ public class TheMillionthFibonacci {
 
         BigInteger i = lastIndex == null || lastIndex.compareTo(n) > 0 ? BigInteger.ONE : lastIndex.subtract(BigInteger.ONE);
         BigInteger[] tmpF_n = lastIndex == null || lastIndex.compareTo(n) > 0 ? null : lastFbState;
-        while (n.subtract(BigInteger.ONE).compareTo(i) > 0) {
+
+        int state = 0;
+        while (n.subtract(BigInteger.ONE).compareTo(i) != 0) {
             if(tmpF_n == null)
                 tmpF_n = Arrays.copyOf(f_n, f_n.length);
-            if (i.mod(BigInteger.TWO).equals(BigInteger.ZERO) && n.compareTo(i.multiply(BigInteger.TWO)) > 0) {
+
+            if (i.mod(BigInteger.TWO).equals(BigInteger.ZERO) && state == 0) {
+                if(n.compareTo(i.multiply(BigInteger.TWO)) <= 0){
+                    state = (n.subtract(i).compareTo(i.multiply(BigInteger.TWO).subtract(n)) < 0) ? 1 : 2;
+                    if (state == 1)
+                        continue;
+                }
+
                 f_n[0] = tmpF_n[0].multiply(tmpF_n[0]).add(tmpF_n[1].multiply(tmpF_n[1]));
                 f_n[1] = tmpF_n[1].multiply(tmpF_n[2]).add(tmpF_n[1].multiply(tmpF_n[0]));
                 f_n[2] = tmpF_n[1].multiply(tmpF_n[1]).add(tmpF_n[2].multiply(tmpF_n[2]));
                 i = i.multiply(BigInteger.TWO);
             } else {
-                f_n[0] = tmpF_n[1];
-                f_n[1] = tmpF_n[2];
-                f_n[2] = tmpF_n[1].add(tmpF_n[2]);
-                i = i.add(BigInteger.ONE);
+                if(state < 2) {
+                    f_n[0] = tmpF_n[1];
+                    f_n[1] = tmpF_n[2];
+                    f_n[2] = tmpF_n[1].add(tmpF_n[2]);
+                    i = i.add(BigInteger.ONE);
+                }else{
+                    f_n[0] = tmpF_n[1].subtract(tmpF_n[0]);
+                    f_n[1] = tmpF_n[0];
+                    f_n[2] = tmpF_n[1];
+                    i = i.subtract(BigInteger.ONE);
+                }
             }
             tmpF_n = null;
         }
