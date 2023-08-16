@@ -164,7 +164,7 @@ public class TheMillionthFibonacci {
             tmpF_n = null;
         }
 
-        quickFbAnchor.put(n,f_n);
+//        quickFbAnchor.put(n,f_n);
         return f_n[2];
     }
 
@@ -196,51 +196,15 @@ public class TheMillionthFibonacci {
     }
 
 
-    static void compress(String inputString){
-        try {
-            // Encode a String into bytes
-            byte[] input = inputString.getBytes("UTF-8");
-
-            // Compress the bytes
-            byte[] output = new byte[1024];
-            Deflater compresser = new Deflater(Deflater.BEST_COMPRESSION,false);
-            compresser.setInput(input);
-            compresser.finish();
-            int compressedDataLength = compresser.deflate(output);
-            compresser.end();
-            for(int i = 0; i < compressedDataLength; i++){
-                System.out.printf("%X",output[i]);
-            }
-            System.out.println();
-
-            // Decompress the bytes
-            Inflater decompresser = new Inflater();
-            decompresser.setInput(output, 0, compressedDataLength);
-            byte[] result = new byte[1024];
-            int resultLength = decompresser.inflate(result);
-            decompresser.end();
-
-            // Decode the bytes into a String
-            String outputString = new String(result, 0, resultLength, "UTF-8");
-            System.out.println(outputString);
-        } catch(java.io.UnsupportedEncodingException ex) {
-            // handle
-        } catch (java.util.zip.DataFormatException ex) {
-            // handle
-        }
-    }
     @Test
     void testQuickFibonachiBigIntegerTiming(){
         long start = System.currentTimeMillis();
-//        TheMillionthFibonacci.compress(quickFibonacci(BigInteger.valueOf(100_000)).toString());
-//        quickFibonacci(BigInteger.valueOf(200_000));
-//        quickFibonacci(BigInteger.valueOf(500_000));
-//        quickFibonacci(BigInteger.valueOf(750_000));
+        quickFibonacci(BigInteger.valueOf(200_000));
+        quickFibonacci(BigInteger.valueOf(500_000));
+        quickFibonacci(BigInteger.valueOf(750_000));
 
         quickFibonacci(BigInteger.valueOf(1_000_000));
 //        quickFibonacci(BigInteger.valueOf(1_500_000));
-
-
 
         System.out.println("QuickFibonacci took: " + (System.currentTimeMillis() - start) + "msec");
     }
