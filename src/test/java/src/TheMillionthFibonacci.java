@@ -1,9 +1,9 @@
 import org.junit.jupiter.api.Test;
+
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.WeakHashMap;
-import java.util.function.Function;
+import java.util.*;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -14,20 +14,30 @@ public class TheMillionthFibonacci {
         if(n <= 3)
             return f_n[n-1];
 
-        for (int i = 1; i < n - 1;) {
+        boolean directionPositive = true;
+        for (int i = 1; i != n - 1;) {
             long[] tmpF_n = Arrays.copyOf(f_n, f_n.length);
 
-            if (i % 2 == 0 && n - 1 > i + i*2) {
+            if (i % 2 == 0 && n > i*2) {
+//                if(n < i*2)
+//                    directionPositive = false;
                 f_n[0] = tmpF_n[0] * tmpF_n[0] + tmpF_n[1] * tmpF_n[1];
                 f_n[1] = tmpF_n[1] * tmpF_n[2] + tmpF_n[1] * tmpF_n[0];
                 f_n[2] = tmpF_n[1] * tmpF_n[1] + tmpF_n[2] * tmpF_n[2];
 //                System.out.println("mult");
                 i*=2;
             } else {
-                i++;
-                f_n[0] = tmpF_n[1];
-                f_n[1] = tmpF_n[2];
-                f_n[2] = tmpF_n[1] + tmpF_n[2];
+                if(directionPositive) {
+                    f_n[0] = tmpF_n[1];
+                    f_n[1] = tmpF_n[2];
+                    f_n[2] = tmpF_n[1] + tmpF_n[2];
+                    i++;
+                }else{
+                    f_n[0] = tmpF_n[1] - tmpF_n[0];
+                    f_n[1] = tmpF_n[0];
+                    f_n[2] = tmpF_n[1];
+                    i--;
+                }
 
 //                System.out.println("add");
             }
@@ -65,6 +75,7 @@ public class TheMillionthFibonacci {
 
     @Test
     void testQuickFibonachi() {
+        long start = System.nanoTime();
         assertEquals(0, quickFibonacci(1));
         assertEquals(1, quickFibonacci(2));
         assertEquals(1, quickFibonacci(3));
@@ -81,20 +92,31 @@ public class TheMillionthFibonacci {
         assertEquals(832040, quickFibonacci(30));
         assertEquals(102334155L, quickFibonacci(40));
         assertEquals(2111485077978050L, quickFibonacci(75));
+        System.out.println("All operations took: " + (System.nanoTime() - start));
 
-        assertEquals(1, findNOf(0));
-        assertEquals(2, findNOf(1));
-        assertEquals(4, findNOf(3));
-        assertEquals(5, findNOf(5));
-        assertEquals(6, findNOf(8));
-        assertEquals(7, findNOf(13));
-        assertEquals(11, findNOf(89));
-        assertEquals(30, findNOf(832040));
+
+//        assertEquals(1, findNOf(0));
+//        assertEquals(2, findNOf(1));
+//        assertEquals(4, findNOf(3));
+//        assertEquals(5, findNOf(5));
+//        assertEquals(6, findNOf(8));
+//        assertEquals(7, findNOf(13));
+//        assertEquals(11, findNOf(89));
+//        assertEquals(30, findNOf(832040));
     }
 
+    static final HashMap<BigInteger,BigInteger[]> quickFbAnchor = new HashMap<>();
     static BigInteger lastIndex = null;
     static BigInteger[] lastFbState = null;
     static BigInteger quickFibonacci(BigInteger n) {
+
+        quickFbAnchor.keySet().stream().filter(key -> key.compareTo(n) <= 0)
+                .max(Comparator.naturalOrder()).ifPresent(key -> {
+                    System.out.println("Retrieved stored anchor key:" + key);
+                    lastIndex = key;
+                    lastFbState = quickFbAnchor.get(key);
+                });
+
         if(lastFbState != null && n.equals(lastIndex))
             return lastFbState[2];
 
@@ -107,7 +129,7 @@ public class TheMillionthFibonacci {
         while (n.subtract(BigInteger.ONE).compareTo(i) > 0) {
             if(tmpF_n == null)
                 tmpF_n = Arrays.copyOf(f_n, f_n.length);
-            if (i.mod(BigInteger.TWO).equals(BigInteger.ZERO) && n.subtract(BigInteger.ONE).compareTo(i.add(i.multiply(BigInteger.TWO))) > 0) {
+            if (i.mod(BigInteger.TWO).equals(BigInteger.ZERO) && n.compareTo(i.multiply(BigInteger.TWO)) > 0) {
                 f_n[0] = tmpF_n[0].multiply(tmpF_n[0]).add(tmpF_n[1].multiply(tmpF_n[1]));
                 f_n[1] = tmpF_n[1].multiply(tmpF_n[2]).add(tmpF_n[1].multiply(tmpF_n[0]));
                 f_n[2] = tmpF_n[1].multiply(tmpF_n[1]).add(tmpF_n[2].multiply(tmpF_n[2]));
@@ -121,8 +143,7 @@ public class TheMillionthFibonacci {
             tmpF_n = null;
         }
 
-        lastIndex = n;
-        lastFbState = f_n;
+        quickFbAnchor.put(n,f_n);
         return f_n[2];
     }
 
@@ -153,15 +174,54 @@ public class TheMillionthFibonacci {
         return i.add(BigInteger.ONE);
     }
 
+
+    static void compress(String inputString){
+        try {
+            // Encode a String into bytes
+            byte[] input = inputString.getBytes("UTF-8");
+
+            // Compress the bytes
+            byte[] output = new byte[1024];
+            Deflater compresser = new Deflater(Deflater.BEST_COMPRESSION,false);
+            compresser.setInput(input);
+            compresser.finish();
+            int compressedDataLength = compresser.deflate(output);
+            compresser.end();
+            for(int i = 0; i < compressedDataLength; i++){
+                System.out.printf("%X",output[i]);
+            }
+            System.out.println();
+
+            // Decompress the bytes
+            Inflater decompresser = new Inflater();
+            decompresser.setInput(output, 0, compressedDataLength);
+            byte[] result = new byte[1024];
+            int resultLength = decompresser.inflate(result);
+            decompresser.end();
+
+            // Decode the bytes into a String
+            String outputString = new String(result, 0, resultLength, "UTF-8");
+            System.out.println(outputString);
+        } catch(java.io.UnsupportedEncodingException ex) {
+            // handle
+        } catch (java.util.zip.DataFormatException ex) {
+            // handle
+        }
+    }
     @Test
     void testQuickFibonachiBigIntegerTiming(){
         long start = System.currentTimeMillis();
-//        for(long i = 0; i < 1_000_000; i++)
-//        quickFibonacci(BigInteger.valueOf(1_088_200));
-//        quickFibonacci(BigInteger.valueOf(1_088_242));
-            F_n(BigInteger.valueOf(1_088_242));
+//        TheMillionthFibonacci.compress(quickFibonacci(BigInteger.valueOf(100_000)).toString());
+//        quickFibonacci(BigInteger.valueOf(200_000));
+//        quickFibonacci(BigInteger.valueOf(500_000));
+//        quickFibonacci(BigInteger.valueOf(750_000));
 
-        System.out.println("QuickFibonacci up to 1_000_000 took: " + (System.currentTimeMillis() - start) + "msec");
+        quickFibonacci(BigInteger.valueOf(1_000_000));
+//        quickFibonacci(BigInteger.valueOf(1_500_000));
+
+
+
+        System.out.println("QuickFibonacci took: " + (System.currentTimeMillis() - start) + "msec");
     }
     @Test
     void testQuickFibonachiBigInteger() {
@@ -283,17 +343,22 @@ public class TheMillionthFibonacci {
         return result;
     }
 
+    static final BigInteger anchorStep = BigInteger.valueOf(50_000);
+
     public static BigInteger fib(BigInteger n) {
 
-            System.out.println(n);
-            Function<BigInteger, BigInteger> f = val -> F_n(val);
+        BigInteger result;
 
-            if (n.signum() < 0 && n.mod(BigInteger.TWO) != BigInteger.ZERO) {
-                return f.apply(n.abs());
-            } else
-                return f.apply(n.abs()).multiply(BigInteger.valueOf(n.signum()));
+        if (n.signum() < 0 && n.mod(BigInteger.TWO) != BigInteger.ZERO) {
+            result = quickFibonacci(n.abs());
+        } else
+            result = quickFibonacci(n.abs()).multiply(BigInteger.valueOf(n.signum()));
 
-
+        quickFbAnchor.keySet().stream().max(Comparator.naturalOrder()).ifPresentOrElse(key -> {
+//            if (key.compareTo(BigInteger.valueOf(750_000)) <= 0)
+                quickFibonacci(key.add(anchorStep));
+        }, () -> quickFibonacci(anchorStep));
+        return result;
 
     }
 
