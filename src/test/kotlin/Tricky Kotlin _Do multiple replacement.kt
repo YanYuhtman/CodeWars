@@ -29,6 +29,6 @@ class `Tricky Kotlin _Do multiple replacement` {
 
     @Test
     fun test(){
-        assertEquals("You {{need}} <extra> time ( or money )", f("You }}need{{ >extra< time ) or money ("))
+        assertEquals("You {{need}} <extra> time ( or money )", replaceParenthesis("You }}need{{ >extra< time ) or money ("))
     }
 }
