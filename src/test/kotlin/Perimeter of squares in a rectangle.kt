@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 class `Perimeter of squares in a rectangle` {
 //    https://www.codewars.com/kata/559a28007caad2ac4e000083
 
-    fun perimeter(n: Int) = (1..n).toList()
+    fun perimeter0(n: Int) = (1..n).toList()
         .fold(mutableListOf(0, 1)) { acc, i -> acc.add(acc[acc.lastIndex - 1] + acc[acc.lastIndex]);acc }
         .reduce { acc, i -> acc + i } * 4
 
@@ -46,20 +46,19 @@ class `Perimeter of squares in a rectangle` {
         }.joinToString("\n") + "\n\n"
     }
 
-    fun perimeter(n: BigInteger):BigInteger{
+    fun perimeter(n: Int):BigInteger{
 
         var fibMatrix = FibMatrix()
         var sum = BigInteger.TWO
-        return when(n){
+        return when(BigInteger.valueOf(n.toLong() )){
             BigInteger.ZERO -> fibMatrix.prev
             BigInteger.ONE -> fibMatrix.cur
             else -> {
-                fibMatrix *= FibMatrix.INIT
-                for(i in 3 .. n.intValueExact()) {
-                    fibMatrix *= (if (i * 2 <= n.toInt()) fibMatrix else FibMatrix.INIT)
+                for(i in 1 until  n) {
+                    fibMatrix *= FibMatrix.INIT
                     sum += fibMatrix.next
                 }
-                sum + BigInteger.TWO
+                sum
             }
         } * BigInteger.valueOf(4)
     }
@@ -78,9 +77,10 @@ class `Perimeter of squares in a rectangle` {
 
     }
     @Test
-    fun test(){
-        assertEquals(BigInteger.valueOf(16), perimeter(BigInteger.valueOf(2)))
-        assertEquals(BigInteger.valueOf(80), perimeter(BigInteger.valueOf(5)))
-        assertEquals(BigInteger.valueOf(216), perimeter(BigInteger.valueOf(7)))
+    fun basicTests() {
+        assertEquals(BigInteger.valueOf(80), perimeter(5))
+        assertEquals(BigInteger.valueOf(216), perimeter(7))
+        assertEquals(BigInteger.valueOf(14098308), perimeter(30))
+
     }
 }
