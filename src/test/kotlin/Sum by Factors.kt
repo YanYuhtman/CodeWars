@@ -5,31 +5,28 @@ class `Sum by Factors` {
     //https://www.codewars.com/kata/54d496788776e49e6b00052f
 
     val Int.isPrime:Boolean get() {
-        for(i in 2 .. Math.floor(Math.sqrt(Math.abs(this).toDouble())).toInt())
+        for(i in 2 .. Math.ceil(Math.sqrt(Math.abs(this).toDouble())).toInt())
             if(this % i == 0)
                 return false
         return true
     }
-    fun findPrimeFactors(I:IntArray, largestPrime: Int):IntArray {
+    fun findPrimeFactors(I:IntArray):IntArray {
         val result = mutableListOf<Int>()
         I.forEach {
-            var n = if(largestPrime > 0) largestPrime else Math.abs(it)
+            var n = Math.abs(it)
             for (i in n downTo 2) {
                 if (it % i == 0 && i.isPrime) {
-                    if (largestPrime < 2) return intArrayOf(i)
                     result.add(i)
                 }
             }
         }
         return result.distinct().sorted().toIntArray()
     }
-
     fun sumOfDivided(I: IntArray): String {
         if(I.isEmpty())
             return ""
-        val maxPrime = findPrimeFactors(intArrayOf( Math.max(Math.abs(I.max()),Math.abs(I.min()))),-1)[0]
-        return findPrimeFactors(I,maxPrime)
-            .fold(mutableListOf<String>()){acc, i -> acc.add("($i ${I.sumOf {if(it%i == 0) it else 0 }})"); acc}
+        return findPrimeFactors(I)
+            .fold(mutableListOf<String>()){acc, i -> acc.add("($i ${I.sumBy {if(it%i == 0) it else 0 }})"); acc}
             .joinToString("")
 
     }
