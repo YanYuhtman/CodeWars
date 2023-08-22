@@ -92,16 +92,4 @@ class `Screen Locking Patterns` {
         assertEquals(8, countPatternsFrom("E", 2), "Should return 8 for path of length 2 with starting point E")
         assertEquals(256, countPatternsFrom("E", 4), "Should return 256 for path of length 4 with starting point E")
     }
-
-    @Test
-    fun prerequisitesTest(){
-
-        val screenMapCopy = initScreenMap()
-        evaluateStartPoint(screenMapCopy,'A')?.let {
-            //rest of the code
-        }?: throw InvalidAlgorithmParameterException()
-
-        while (makeStep(screenMapCopy,DIRECTIONS[2],0,0) != null) {}
-        val a = 1
-    }
 }
