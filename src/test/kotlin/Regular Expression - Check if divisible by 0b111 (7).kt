@@ -3,10 +3,11 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-const val multipleOf7 = "0|[01]*?(111)|(111[0]+\$)|(10101[0]*\$)|(100011[0]*\$)|(110001[0]*\$)|(1001101\$)|(1011011\$)"
+const val multipleOf7 = "(0|111|100((1|00)0)*011|(101|100((1|00)0)*(1|00)1)(1((1|00)0)*(1|00)1)*(01|1((1|00)0)*011)|(110|100((1|00)0)*010|(101|100((1|00)0)*(1|00)1)(1((1|00)0)*(1|00)1)*(00|1((1|00)0)*010))(1|0(1((1|00)0)*(1|00)1)*(00|1((1|00)0)*010))*0(1((1|00)0)*(1|00)1)*(01|1((1|00)0)*011))+"
 class `Regular Expression - Check if divisible by 0b111 (7)` {
 
     //https://www.codewars.com/kata/56a73d2194505c29f600002d
+    //https://codegolf.stackexchange.com/questions/3503/hard-code-golf-regex-for-divisibility-by-7
 
 
     companion object {
@@ -21,9 +22,10 @@ class `Regular Expression - Check if divisible by 0b111 (7)` {
 
     @Test
     fun fixedTests() {
-        for (n in 1..999) {
-            if(n % 7 == 0) println(n.toString(2))
-//            assertEquals(n % 7 == 0, regex.matches(n.toString(2)), "Testing for: $n")
+        for (n in 1..99) {
+//            println("${n.toString(2)} = ${n} ${if (n%3 == 0) "v" else "" }")
+//            if(n % 3 == 0) println(n.toString(2))
+            assertEquals(n % 7 == 0, regex.matches(n.toString(2)), "Testing for: $n")
         }
     }
 
