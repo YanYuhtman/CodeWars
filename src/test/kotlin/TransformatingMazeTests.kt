@@ -39,12 +39,11 @@ internal class  TransformatingMazeTests {
             || (maze[x][y] < 0 && maze[x][y] != -2)
             || (maze[x][y] > 0 && (maze[x][y] and direction.inverse.bitwise != 0))
         ) return null
-        maze[currentX][currentY] = -1
         return (x to y)
     }
 
     fun findPath(maze: Array<IntArray>, x:Int, y:Int, rotations:Int, directions:List<String>, results:MutableList<List<String>>){
-        results.maxOfOrNull { it.size }?.let {
+        results.minOfOrNull { it.size }?.let {
             if(directions.size >= it)
                 return
         }
@@ -58,7 +57,9 @@ internal class  TransformatingMazeTests {
         Direction.values().forEach {direction->
             makeStep(maze,x,y,direction)?.also {
                 val _directions = directions.mapIndexed { index, s -> if(index == directions.lastIndex) s + direction else s }
-                findPath(maze.map { it.map { it }.toIntArray() }.toTypedArray(),it.first,it.second,0,_directions,results)
+                val _maze = maze.map { it.map { it }.toIntArray() }.toTypedArray()
+                _maze[x][y] = -1
+                findPath(_maze,it.first,it.second,0,_directions,results)
             }
         }
         if(rotations < 4)
@@ -71,7 +72,7 @@ internal class  TransformatingMazeTests {
         val startPoint = getStartPoint(maze)
         var results = mutableListOf<List<String>>()
         findPath(maze,startPoint.first,startPoint.second, 0, mutableListOf(""),results)
-        return results.sortedBy { it.size }.first().toTypedArray()
+        return if(results.isNotEmpty()) results.sortedBy { it.size }.first().toTypedArray() else null
 
     }
 
@@ -85,37 +86,37 @@ internal class  TransformatingMazeTests {
                     intArrayOf(-1,9,6,8),
                     intArrayOf(12,7,7,-2)),
                 arrayOf("NNE", "EE", "S", "SS")),
-//            Pair(
-//                arrayOf(
-//                    intArrayOf(6,3,10,4,11),
-//                    intArrayOf(8,10,4,8,5),
-//                    intArrayOf(-1,14,11,3,-2),
-//                    intArrayOf(15,3,4,14,15),
-//                    intArrayOf(14,7,15,5,5)),
-//                arrayOf("", "", "E", "", "E", "NESE")),
-//            Pair(
-//                arrayOf(
-//                    intArrayOf(9,1,9,0,13,0),
-//                    intArrayOf(14,1,11,2,11,4),
-//                    intArrayOf(-1,2,11,0,0,15),
-//                    intArrayOf(4,3,9,6,3,-2)),
-//                arrayOf("E", "SE", "", "E", "E", "E")),
-//            Pair(
-//                arrayOf(
-//                    intArrayOf(-1,6,12,15,11),
-//                    intArrayOf(8,7,15,7,10),
-//                    intArrayOf(13,7,13,15,-2),
-//                    intArrayOf(11,10,8,1,3),
-//                    intArrayOf(12,6,9,14,7)),
-//                null),
-//            Pair(
-//                arrayOf(
-//                    intArrayOf(6,3,0,9,14,13,14),
-//                    intArrayOf(-1,14,9,11,15,14,15),
-//                    intArrayOf(2,15,0,12,6,15,-2),
-//                    intArrayOf(4,10,7,6,15,5,3),
-//                    intArrayOf(7,3,13,13,14,7,0)),
-//                null)
+            Pair(
+                arrayOf(
+                    intArrayOf(6,3,10,4,11),
+                    intArrayOf(8,10,4,8,5),
+                    intArrayOf(-1,14,11,3,-2),
+                    intArrayOf(15,3,4,14,15),
+                    intArrayOf(14,7,15,5,5)),
+                arrayOf("", "", "E", "", "E", "NESE")),
+            Pair(
+                arrayOf(
+                    intArrayOf(9,1,9,0,13,0),
+                    intArrayOf(14,1,11,2,11,4),
+                    intArrayOf(-1,2,11,0,0,15),
+                    intArrayOf(4,3,9,6,3,-2)),
+                arrayOf("E", "SE", "", "E", "E", "E")),
+            Pair(
+                arrayOf(
+                    intArrayOf(-1,6,12,15,11),
+                    intArrayOf(8,7,15,7,10),
+                    intArrayOf(13,7,13,15,-2),
+                    intArrayOf(11,10,8,1,3),
+                    intArrayOf(12,6,9,14,7)),
+                null),
+            Pair(
+                arrayOf(
+                    intArrayOf(6,3,0,9,14,13,14),
+                    intArrayOf(-1,14,9,11,15,14,15),
+                    intArrayOf(2,15,0,12,6,15,-2),
+                    intArrayOf(4,10,7,6,15,5,3),
+                    intArrayOf(7,3,13,13,14,7,0)),
+                null)
         )
 
         testCases.forEach { (maze,sol) -> assertTrue(mazeSolver(maze).contentDeepEquals(sol)) }
