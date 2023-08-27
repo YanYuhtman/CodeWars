@@ -109,6 +109,9 @@ public class Transforming_Maze {
                 }
             });
             paths.add(new Object[]{new ArrayList<String>(List.of("")) ,currentPos});
+            paths.add(new Object[]{new ArrayList<String>(List.of("", "")) ,currentPos});
+            paths.add(new Object[]{new ArrayList<String>(List.of("", "", "")) ,currentPos});
+            paths.add(new Object[]{new ArrayList<String>(List.of("", "", "","")) ,currentPos});
 
 
             while (!paths.isEmpty()) {
@@ -127,12 +130,14 @@ public class Transforming_Maze {
                         paths.add(new Object[]{_path, nextPos});
 
                         setVisited(maze[rotation], currentPos);
-                    }else{
-                        ArrayList<String> _path = new ArrayList<>(path);
+                    }
+                    ArrayList<String> _path = new ArrayList<>(path);
+                    for(int i = 1; i < 4; i++) {
                         _path.add("");
-                        if (!isVisited(maze[(rotation + 1)%4],currentPos)) {
-                            paths.add(new Object[]{_path, currentPos});
-                            setVisited(maze[(rotation + 1)%4],currentPos);
+                        int[][] _maze = maze[(rotation + i) % 4];
+                        if (!isVisited(_maze, currentPos)) {
+                            paths.add(new Object[]{new ArrayList<>(_path), currentPos});
+                            setVisited(_maze, currentPos);
                         }
                     }
                 }
@@ -222,6 +227,8 @@ public class Transforming_Maze {
                 {5, 10, 9, 6, 3, 5},
                 {12, 5, 12, 4, 9, 4}
         };
+        List<String> solution = new MazeSolver(puzle).solve();
+        Assertions.assertNotNull(solution);
     }
 
 
@@ -243,6 +250,8 @@ public class Transforming_Maze {
                 {15, 0, 6, 6, 8, 9, 11, -2},
                 {0, 13, 7, 4, 3, 8, 11, 6},
         };
+        List<String> solution = new MazeSolver(puzle).solve();
+        Assertions.assertTrue(solution.size() == 12);
     }
 
     @Test
