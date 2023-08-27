@@ -1,9 +1,6 @@
-import com.sun.source.tree.Tree;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.testng.collections.Lists;
 
-import java.security.InvalidParameterException;
 import java.util.*;
 
 public class Transforming_Maze {
@@ -39,13 +36,13 @@ public class Transforming_Maze {
         }
 
         int[] getEntrance(int[][] maze ){
-            for(int i = 0; i < maze.length;i++)
-                for(int j = 0; j < maze[i].length;j++)
-                    if(maze[i][j] == -1) return new int[]{i,j};
-            throw new InvalidParameterException("Maze has no entrance");
+            for (int i = 0; i < maze.length; i++)
+                if (maze[i][0] == -1)
+                    return new int[]{i, 0};
+            return new int[]{0,0};
         }
 
-        int[] makeStep(int[][] maze, int[] current, Direction direction){
+        int[] checkStep(int[][] maze, int[] current, Direction direction){
             int[] nextPos = null;
             switch (direction){
                 case N: nextPos = new int[]{current[0] - 1, current[1]}; break;
@@ -61,7 +58,7 @@ public class Transforming_Maze {
             return nextPos;
         }
 
-        void findPath(int[][] maze, int[] pos, int rotations, ArrayList<String> directions){
+        void findPathRecursive(int[][] maze, int[] pos, int rotations, ArrayList<String> directions){
             if(results.size() > 1 && directions.size() > results.first().size())
                 return;
             if(maze[pos[0]][pos[1]] == -2) {
@@ -70,19 +67,19 @@ public class Transforming_Maze {
             }
 
             for(Direction direction : Direction.values()){
-                int[] newPos = makeStep(maze,pos,direction);
+                int[] newPos = checkStep(maze,pos,direction);
                 if(newPos != null){
                     ArrayList<String> _directions = new ArrayList<>(directions);
-                    _directions.set(_directions.size() -1 ,_directions.get(_directions.size() -1) + direction);
+                    _directions.set(_directions.size() - 1 ,_directions.get(_directions.size() -1) + direction);
                     int[][] _maze = rotateMaze(maze,0);
                     _maze[pos[0]][pos[1]] = -1;
-                    findPath(_maze,newPos,0,_directions);
+                    findPathRecursive(_maze,newPos,0,_directions);
                 }
             }
             if(rotations < 4) {
                 ArrayList<String> _directions = new ArrayList<>(directions);
                 _directions.add("");
-                findPath(rotateMaze(maze, rotations + 1), pos,rotations + 1,_directions);
+                findPathRecursive(rotateMaze(maze, rotations + 1), pos,rotations + 1,_directions);
             }
         }
 
@@ -93,9 +90,49 @@ public class Transforming_Maze {
             }
         });
 
-        private int[][] originalMaze;
+        ArrayList<String> findPath(int[] currentPos){
+
+            Queue<Object[]> paths = new PriorityQueue<Object[]>(new Comparator<Object[]>() {
+                @Override
+                public int compare(Object[] o1, Object[] o2) {
+                    return ((ArrayList<String>)o1[0]).size() -  ((ArrayList<String>)o2[0]).size();
+                }
+            });
+            paths.add(new Object[]{new ArrayList<String>(List.of("")) ,currentPos});
+
+
+            while (!paths.isEmpty()){
+
+               ArrayList<String> path = (ArrayList<String>) paths.peek()[0];
+               currentPos = (int[]) paths.poll()[1];
+
+               boolean atLeastOneFound = false;
+               for(int rCount = 0, rotation = (path.size())-1 % 4; rCount < 4 && !atLeastOneFound; rCount++ , rotation = (rotation + 1)  % 4) {
+
+
+                   for (Direction direction : Direction.values()) {
+                       int[] nextPos = checkStep(maze[rotation], currentPos, direction);
+                       if (nextPos != null) {
+                           atLeastOneFound = rCount == 0;
+                           ArrayList<String> _directions = new ArrayList<>(path);
+                           //TODO: Add blank path on rotation (it must be done only once per rCount)
+                           _directions.set(_directions.size() - 1, _directions.get(_directions.size() - 1) + direction);
+                           paths.add(new Object[]{_directions, nextPos});
+                           maze[rotation][currentPos[0]][currentPos[1]] = -1;
+                       }
+                   }
+               }
+            };
+
+
+            return null;
+        }
+
+        private int[][][] maze = new int[4][][];
         public MazeSolver(int[][] maze) {
-            originalMaze = maze;
+            for(int i = 0; i < 4; i++)
+                this.maze[i] = rotateMaze(maze,i);
+
         }
 
         public List<String> solve() {
@@ -104,11 +141,13 @@ public class Transforming_Maze {
 //                System.out.println();
 //            });
 
-            int[] startPosition = getEntrance(originalMaze);
-            ArrayList<String> emptyDirections = new ArrayList<>();
-            emptyDirections.add("");
-            findPath(originalMaze,startPosition,0,emptyDirections);
-            return results.first();
+            int[] startPosition = getEntrance(maze[0]);
+            findPath(startPosition);
+//            ArrayList<String> emptyDirections = new ArrayList<>();
+//            emptyDirections.add("");
+//
+//            findPathRecursive(maze[0],startPosition,0,emptyDirections);
+            return results.size() == 0 ? null : results.first();
         }
     }
 
