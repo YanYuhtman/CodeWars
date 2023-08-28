@@ -2,9 +2,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 
+@Deprecated("Not an optimal solution @see Java code")
 internal class TransformatingMazeTests {
 
     //https://www.codewars.com/kata/5b86a6d7a4dcc13cd900000b/kotlin
+
+    // Not an optimal solution @see Java code
     val maze = arrayOf(
         intArrayOf(4, 2, 5, 4),
         intArrayOf(4, 15, 11, 1),

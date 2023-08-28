@@ -1,6 +1,7 @@
 import java.security.InvalidParameterException
 
 //https://www.codewars.com/kata/5b86a6d7a4dcc13cd900000b
+@Deprecated("Not an optimal solution @see Java code")
 class TransformingMaze (originalMaze: Array<Array<Any>>?){
     companion object {
         fun mazeToString(maze: Array<out Array<out Any>>): String {
