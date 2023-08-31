@@ -5,10 +5,6 @@ import kotlin.test.assertFails
 
 //https://www.codewars.com/kata/5abab55b20746bc32e000008/kotlin
 data class Blob(var y: Int, var x: Int, var size: Int) : Comparable<Blob>{
-    init {
-        if(size < 1 || size > 20)
-            throw IllegalArgumentException("Blob size $size is illegal")
-    }
     var name = ""
     constructor(y: Int, x: Int, size: Int, name:String):this(y, x, size){
         this.name = name
@@ -16,7 +12,7 @@ data class Blob(var y: Int, var x: Int, var size: Int) : Comparable<Blob>{
     operator fun plus(blob:Blob):Blob = if(blob.y != this.y || blob.x != this.x)
         throw IllegalArgumentException("These blobs $this and $blob can't be fused")
     else
-        Blob(y,x,blob.size + this.size)
+        Blob(y,x,blob.size + this.size,name)
 
 
 
@@ -125,8 +121,9 @@ class Blobservation(val height: Int, val width: Int = height) {
 
     fun move(n: Int = 1) {
         if(n < 1) throw IllegalArgumentException("Moves number must be > 0")
-        val tempMap = mBlobs.map { it.copy() }
+
         for(i in 1..n) {
+            val tempMap = mBlobs.map { it.copy() }
             mBlobs.forEach { tBlob ->
                 tBlob.move(tempMap.filter { tBlob.size > it.size })
             }
