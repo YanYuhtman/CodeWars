@@ -69,21 +69,20 @@ data class Blob(var y: Int, var x: Int, var size: Int) : Comparable<Blob>{
         if(potentialTargets.isEmpty())
             return
 
-         var tmp = potentialTargets.associateWith {
-             Pair(this.approximateDistance(it).let { it.first + it.second },getDirectionTo(it))}
-        tmp = tmp.run {
-            filter {map-> map.value.first == this.minOf { it.value.first }}
-        }.run {filter { map->map.key.size == this.maxOf { it.key.size } }}
-
-            tmp.run {
-          val t2=   this.map { it.key }.sortedBy { getClockDirection(this[it]!!.second) }
-
-                t2.firstOrNull()?.let {
-                    val direction = this[it]!!.second
-                    this@Blob.y += direction.first
-                    this@Blob.x += direction.second
-                }
+        potentialTargets.associateWith {
+            Pair(this.approximateDistance(it).let { it.first + it.second }, getDirectionTo(it))
         }
+            .run {
+                filter { map -> map.value.first == this.minOf { it.value.first } }
+            }.run { filter { map -> map.key.size == this.maxOf { it.key.size } } }
+            .run {
+                this.map { it.key }.sortedBy { getClockDirection(this[it]!!.second) }
+                    .firstOrNull()?.let {
+                        val direction = this[it]!!.second
+                        this@Blob.y += direction.first
+                        this@Blob.x += direction.second
+                    }
+            }
     }
 
     override fun toString(): String {
