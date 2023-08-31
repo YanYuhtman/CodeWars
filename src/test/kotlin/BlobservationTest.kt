@@ -9,11 +9,15 @@ data class Blob(var y: Int, var x: Int, var size: Int) : Comparable<Blob>{
         if(size < 1 || size > 20)
             throw IllegalArgumentException("Blob size $size is illegal")
     }
-
+    var name = ""
+    constructor(y: Int, x: Int, size: Int, name:String):this(y, x, size){
+        this.name = name
+    }
     operator fun plus(blob:Blob):Blob = if(blob.y != this.y || blob.x != this.x)
         throw IllegalArgumentException("These blobs $this and $blob can't be fused")
     else
         Blob(y,x,blob.size + this.size)
+
 
 
     override fun compareTo(other: Blob) = if(this.y > other.y) -1 else {
@@ -37,11 +41,13 @@ data class Blob(var y: Int, var x: Int, var size: Int) : Comparable<Blob>{
     private fun signum(num:Int) = if(num < 0) -1 else if(num > 0) 1 else 0
     fun getDirectionTo(blob:Blob) = (signum(blob.y - this.y) to signum(blob.x - this.x))
 
-    private fun calcDistance(point0:Pair<Number,Number>, point1:Pair<Number,Number>) =
-        /*Math.floor(*/Math.sqrt(Math.pow(point1.first.toDouble() - point0.first.toDouble(),2.0) + Math.pow(point1.second.toDouble() - point0.second.toDouble(),2.0))/*).toInt() - 1*/
-    fun approximateDistance(blob: Blob, direction: Pair<Int,Int>): Pair<Number,Number> {
+    fun approximateDistance(blob: Blob): Pair<Int,Int> {
+        val direction = getDirectionTo(blob)
+        if(direction.first == 0)
+            return Pair(0,Math.abs(blob.x - this.x))
         if(direction.second == 0)
-            return Pair(blob.x - this.x,0)
+            return Pair(0,Math.abs(blob.y - this.y))
+
 
         val m:Double = direction.first/direction.second.toDouble()
         val b:Double = this.y - m * this.x
@@ -49,20 +55,43 @@ data class Blob(var y: Int, var x: Int, var size: Int) : Comparable<Blob>{
         val y_3:Double = m * blob.x + b
         val x_3:Double = (blob.y - b)/m
 
-        val d1 = Math.abs(y_3 - this.y).toInt()//calcDistance((y_3 to blob.x),(this.y to this.x ))
-        val d2 = Math.abs(x_3 - this.x).toInt()//calcDistance((blob.y to x_3),(this.y to this.x ))
+        val d1 = Math.abs(y_3 - this.y).toInt()
+        val d2 = Math.abs(x_3 - this.x).toInt()
 
-        if(d1 < d2)
-            return Pair(d1,Math.abs(y_3 - blob.y).toInt())
+        return if(d1 < d2)
+            Pair(d1,Math.abs(y_3 - blob.y).toInt())
         else
-            return Pair(d2,Math.abs(x_3 - blob.x).toInt())
+            Pair(d2,Math.abs(x_3 - blob.x).toInt())
 
     }
+    fun getClockDirection(direction: Pair<Int,Int>) = when(direction){
+        (-1 to 0) -> 0; (-1 to 1) -> 45; (0 to 1) -> 90; (1 to 1) -> 135; (1 to 0) -> 180; (1 to -1) -> 225; (0 to -1) -> 270; (-1 to -1) -> 315
+        else -> throw IllegalArgumentException("Unable to resolve degrees upon direction $direction")
+    }
+
     fun move(potentialTargets: List<Blob>){
         if(potentialTargets.isEmpty())
             return
-        potentialTargets.map {  }
 
+         var tmp = potentialTargets.associateWith {
+             Pair(this.approximateDistance(it).let { it.first + it.second },getDirectionTo(it))}
+        tmp = tmp.run {
+            filter {map-> map.value.first == this.minOf { it.value.first }}
+        }.run {filter { map->map.key.size == this.maxOf { it.key.size } }}
+
+            tmp.run {
+          val t2=   this.map { it.key }.sortedBy { getClockDirection(this[it]!!.second) }
+
+                t2.firstOrNull()?.let {
+                    val direction = this[it]!!.second
+                    this@Blob.y += direction.first
+                    this@Blob.x += direction.second
+                }
+        }
+    }
+
+    override fun toString(): String {
+        return "Blob(y=$y, x=$x, size=$size, name='$name')"
     }
 
 
@@ -88,7 +117,7 @@ class Blobservation(val height: Int, val width: Int = height) {
         fuseBlobs()
     }
     private fun fuseBlobs(){
-        mBlobs = mBlobs.sorted().fold(mutableListOf<Blob>()){ acc, blob ->
+        mBlobs = mBlobs.sortedDescending().fold(mutableListOf<Blob>()){ acc, blob ->
             if(acc.isEmpty() || acc.last() != blob) acc.apply { add(blob) }
             else acc.apply { acc[acc.lastIndex] += blob}
         }
@@ -96,18 +125,18 @@ class Blobservation(val height: Int, val width: Int = height) {
 
     fun move(n: Int = 1) {
         if(n < 1) throw IllegalArgumentException("Moves number must be > 0")
+        val tempMap = mBlobs.map { it.copy() }
         for(i in 1..n) {
             mBlobs.forEach { tBlob ->
-                tBlob.move(mBlobs.filter { tBlob.size > it.size })
+                tBlob.move(tempMap.filter { tBlob.size > it.size })
             }
             fuseBlobs()
         }
     }
 
 
-    fun printState(): List<IntArray> {
-        TODO()
-    }
+    fun printState(): List<IntArray> = mBlobs.map { intArrayOf(it.y,it.x,it.size) }
+
 }
 
 
@@ -138,25 +167,54 @@ class ExampleTests {
     @Test fun testDistances(){
         val blob0 = Blob(4,3,1)
         var blob1 = Blob(7,0,1)
-        assertEquals(Pair(3,0), blob0.approximateDistance(blob1,blob0.getDirectionTo(blob1)))
+        var direction = blob0.getDirectionTo(blob1)
+        var distance = blob0.approximateDistance(blob1)
+        assertEquals(Pair(3,0),distance)
+        assertEquals(225,blob0.getClockDirection(direction))
+
         blob1 = Blob(0,7,1)
-        assertEquals(Pair(4,0), blob0.approximateDistance(blob1,blob0.getDirectionTo(blob1)))
+        direction = blob0.getDirectionTo(blob1)
+        distance = blob0.approximateDistance(blob1)
+        assertEquals(Pair(4,0), distance)
+        assertEquals(45,blob0.getClockDirection(direction))
+
         blob1 = Blob(2,0,1)
-        assertEquals(Pair(2,1), blob0.approximateDistance(blob1,blob0.getDirectionTo(blob1)))
+        direction = blob0.getDirectionTo(blob1)
+        distance = blob0.approximateDistance(blob1)
+        assertEquals(Pair(2,1), distance)
+        assertEquals(315,blob0.getClockDirection(direction))
+
+        blob1 = Blob(3,7,1)
+        direction = blob0.getDirectionTo(blob1)
+        distance = blob0.approximateDistance(blob1)
+        assertEquals(Pair(1,3),distance)
+        assertEquals(45,blob0.getClockDirection(direction))
+
+        blob1 = Blob(0,4,1)
+        direction = blob0.getDirectionTo(blob1)
+        distance = blob0.approximateDistance(blob1)
+        assertEquals(Pair(1,3), distance)
+        assertEquals(45,blob0.getClockDirection(direction))
+
+        blob1 = Blob(7,2,1)
+        direction = blob0.getDirectionTo(blob1)
+        distance = blob0.approximateDistance(blob1)
+        assertEquals(Pair(1,2), distance)
+        assertEquals(225,blob0.getClockDirection(direction))
     }
 
     @Test
     fun `Eaxmple Test 1`() {
         val generation = arrayOf(
-            Blob(0, 4, 3),
-            Blob(0, 7, 5),
-            Blob(2, 0, 2),
-            Blob(3, 7, 2),
-            Blob(4, 3, 4),
-            Blob(5, 6, 2),
-            Blob(6, 7, 1),
-            Blob(7, 0, 3),
-            Blob(7, 2, 1)
+            Blob(0, 4, 3, "Purple_T"),
+            Blob(0, 7, 5, "Yellow"),
+            Blob(2, 0, 2, "Green_L"),
+            Blob(3, 7, 2, "Green_R"),
+            Blob(4, 3, 4, "Orange"),
+            Blob(5, 6, 2, "Green_B"),
+            Blob(6, 7, 1, "Turquoise_R"),
+            Blob(7, 0, 3, "Purple_B"),
+            Blob(7, 2, 1,"Turquoise_L")
         )
         val blobState1 = arrayOf(
             intArrayOf(0, 6, 5),
