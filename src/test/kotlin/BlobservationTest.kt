@@ -6,6 +6,7 @@ import kotlin.test.assertFails
 //https://www.codewars.com/kata/5abab55b20746bc32e000008/kotlin
 data class Blob(var y: Int, var x: Int, var size: Int) : Comparable<Blob>{
     var name = ""
+
     constructor(y: Int, x: Int, size: Int, name:String):this(y, x, size){
         this.name = name
     }
@@ -105,7 +106,7 @@ class Blobservation(val height: Int, val width: Int = height) {
     fun populate(blobs: Array<Blob>) {
         if(blobs.isEmpty())
             throw IllegalArgumentException("Blob array must contain at least one Blob")
-        blobs.forEach { if(it.y < 0 || it.y > width || it.x < 0 || it.x > this.height)
+        blobs.forEach { if(it.y < 0 || it.y > height || it.x < 0 || it.x > this.width || it.size < 1)
             throw IllegalArgumentException("Blob [${it.y}:${it.x} is out of board")
         }
         mBlobs.addAll(blobs)
