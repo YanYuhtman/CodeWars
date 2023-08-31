@@ -1,22 +1,109 @@
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFails
 
 //https://www.codewars.com/kata/5abab55b20746bc32e000008/kotlin
-data class Blob(var x: Int, var y: Int, var size: Int) {
+data class Blob(var y: Int, var x: Int, var size: Int) : Comparable<Blob>{
+    init {
+        if(size < 1 || size > 20)
+            throw IllegalArgumentException("Blob size $size is illegal")
+    }
+
+    operator fun plus(blob:Blob):Blob = if(blob.y != this.y || blob.x != this.x)
+        throw IllegalArgumentException("These blobs $this and $blob can't be fused")
+    else
+        Blob(y,x,blob.size + this.size)
+
+
+    override fun compareTo(other: Blob) = if(this.y > other.y) -1 else {
+            if(this.y < other.y) 1 else{
+                if(this.x > other.x) -1 else{
+                    if(this.x < other.x) 1
+                    else 0
+                }
+            }
+        }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Blob
+
+        if (y != other.y) return false
+        return x == other.x
+    }
+    private fun signum(num:Int) = if(num < 0) -1 else if(num > 0) 1 else 0
+    fun getDirectionTo(blob:Blob) = (signum(blob.y - this.y) to signum(blob.x - this.x))
+
+    private fun calcDistance(point0:Pair<Number,Number>, point1:Pair<Number,Number>) =
+        /*Math.floor(*/Math.sqrt(Math.pow(point1.first.toDouble() - point0.first.toDouble(),2.0) + Math.pow(point1.second.toDouble() - point0.second.toDouble(),2.0))/*).toInt() - 1*/
+    fun approximateDistance(blob: Blob, direction: Pair<Int,Int>): Pair<Number,Number> {
+        if(direction.second == 0)
+            return Pair(blob.x - this.x,0)
+
+        val m:Double = direction.first/direction.second.toDouble()
+        val b:Double = this.y - m * this.x
+
+        val y_3:Double = m * blob.x + b
+        val x_3:Double = (blob.y - b)/m
+
+        val d1 = Math.abs(y_3 - this.y).toInt()//calcDistance((y_3 to blob.x),(this.y to this.x ))
+        val d2 = Math.abs(x_3 - this.x).toInt()//calcDistance((blob.y to x_3),(this.y to this.x ))
+
+        if(d1 < d2)
+            return Pair(d1,Math.abs(y_3 - blob.y).toInt())
+        else
+            return Pair(d2,Math.abs(x_3 - blob.x).toInt())
+
+    }
+    fun move(potentialTargets: List<Blob>){
+        if(potentialTargets.isEmpty())
+            return
+        potentialTargets.map {  }
+
+    }
+
 
 }
 
 
-class Blobservation(height: Int, width: Int = height) {
+class Blobservation(val height: Int, val width: Int = height) {
+    init {
+        if(height < 8 || height > 50 || width < 8 || width > 50)
+            throw IllegalArgumentException("Height or width board values [$height:$width] are invalid")
+    }
+
+    private var mBlobs = mutableListOf<Blob>()
+
     // if invalid arguments are given to either `populate` or `move` methods, throw an IllegalArgumentException
     fun populate(blobs: Array<Blob>) {
-        TODO()
+        if(blobs.isEmpty())
+            throw IllegalArgumentException("Blob array must contain at least one Blob")
+        blobs.forEach { if(it.y < 0 || it.y > width || it.x < 0 || it.x > this.height)
+            throw IllegalArgumentException("Blob [${it.y}:${it.x} is out of board")
+        }
+        mBlobs.addAll(blobs)
+        fuseBlobs()
+    }
+    private fun fuseBlobs(){
+        mBlobs = mBlobs.sorted().fold(mutableListOf<Blob>()){ acc, blob ->
+            if(acc.isEmpty() || acc.last() != blob) acc.apply { add(blob) }
+            else acc.apply { acc[acc.lastIndex] += blob}
+        }
     }
 
     fun move(n: Int = 1) {
-        TODO()
+        if(n < 1) throw IllegalArgumentException("Moves number must be > 0")
+        for(i in 1..n) {
+            mBlobs.forEach { tBlob ->
+                tBlob.move(mBlobs.filter { tBlob.size > it.size })
+            }
+            fuseBlobs()
+        }
     }
+
 
     fun printState(): List<IntArray> {
         TODO()
@@ -28,7 +115,36 @@ fun printCheck(user: Blobservation, exp: Array<IntArray>) =
     assertTrue(exp.contentDeepEquals(user.printState().toTypedArray()))
 
 
+
+
 class ExampleTests {
+    @Test fun testDirections(){
+        var blob0 = Blob(1,1,1)
+        assertEquals(Pair(-1,-1),blob0.getDirectionTo(Blob(0,0,1)))
+        assertEquals(Pair(-1,0),blob0.getDirectionTo(Blob(0,1,1)))
+        assertEquals(Pair(-1,1),blob0.getDirectionTo(Blob(0,2,1)))
+        assertEquals(Pair(0,-1),blob0.getDirectionTo(Blob(1,0,1)))
+        assertEquals(Pair(0,1),blob0.getDirectionTo(Blob(1,2,1)))
+        assertEquals(Pair(1,-1),blob0.getDirectionTo(Blob(2,0,1)))
+        assertEquals(Pair(1,0),blob0.getDirectionTo(Blob(2,1,1)))
+        assertEquals(Pair(1,1),blob0.getDirectionTo(Blob(2,2,1)))
+        assertEquals(Pair(0,0),blob0.getDirectionTo(Blob(1,1,1)))
+
+        blob0 = Blob(4,3,1)
+        assertEquals(Pair(-1,1), blob0.getDirectionTo(Blob(0,7,1)))
+
+    }
+
+    @Test fun testDistances(){
+        val blob0 = Blob(4,3,1)
+        var blob1 = Blob(7,0,1)
+        assertEquals(Pair(3,0), blob0.approximateDistance(blob1,blob0.getDirectionTo(blob1)))
+        blob1 = Blob(0,7,1)
+        assertEquals(Pair(4,0), blob0.approximateDistance(blob1,blob0.getDirectionTo(blob1)))
+        blob1 = Blob(2,0,1)
+        assertEquals(Pair(2,1), blob0.approximateDistance(blob1,blob0.getDirectionTo(blob1)))
+    }
+
     @Test
     fun `Eaxmple Test 1`() {
         val generation = arrayOf(
