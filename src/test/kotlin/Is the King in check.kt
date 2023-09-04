@@ -7,7 +7,49 @@ class `Is the King in check` {
 
     //https://www.codewars.com/kata/5e320fe3358578001e04ad55/
 
-    fun isCheck(b: Array<Array<String>>)=b.mapIndexed{y,s->s.mapIndexed{x,s->s to arrayOf(x*1.0,y*1.0)}}.flatten().toMap().let{it["♔"]!!.let{k->it.mapValues{(_,v)->arrayOf(v[0]-k[0],v[1]-k[1])}}.mapValues {(k,v)->arrayOf(v[0]/v[1],sqrt(v[0]*v[0]+v[1]*v[1]))}.toList().distinctBy {it.second[0]}.toMap()}.let{m->mapOf("♛" to arrayOf(0.0,1/0.0,1.0,12.0),"♟" to arrayOf(1.0, sqrt(2.0)),"♝" to arrayOf(1.0,12.0),"♜" to arrayOf(0.0,1/0.0,8.0),"♞" to arrayOf(0.5,2.0,sqrt(5.0))).any{e->e.value.any{v->m[e.key]?.let{p->abs(p[0])==v&&p[1]<=e.value.last()}?:false}}}
+    fun isCheck(b: Array<Array<String>>)=b.mapIndexed{y,s->s.mapIndexed{x,s->listOf(s[0].toFloat(),x*1F,y*1F)}}
+            .flatten().filter{it[0]!=32F}.sortedBy{it[0]}
+            .let{m->m.map {i->listOf(i[0],i[1]-m[0][1],i[2]-m[0][2])}}
+            .map{val(s,x,y)=it
+                listOf(s,abs(x/y),x*x+y*y)}.sortedBy{it[2]}.distinctBy{it[1]}
+            .any {val(s,x,y)=it
+                when(s.toChar()){
+                    '♞'->x==0.5F&&y==5F
+                    '♝'->x==1F
+                    '♟'->x==1F&&y==2F
+                    '♜'->x==0F||x==1/0F
+                    '♛'->x==0F||x==1F||x==1/0F
+                    else->false}}
+
+
+    fun isCheck3(b: Array<Array<String>>):Boolean {
+        b.forEach { it.forEach {
+            val l = when (it){
+                "♛"-> "Q"
+                "♟"-> "p"
+                "♝"-> "B"
+                "♜"-> "R"
+                "♞"-> "k"
+                "♔"-> "K"
+                else->"*"
+            }
+            print(" $l ") }; println()}
+        println()
+       return b.mapIndexed { y, s -> s.mapIndexed { x, s -> s to arrayOf(x * 1.0, y * 1.0) } }.flatten().toMap().let {
+            it["♔"]!!.let { k -> it.mapValues { (_, v) -> arrayOf(v[0] - k[0], v[1] - k[1]) } }
+                .mapValues { (k, v) -> arrayOf(v[0] / v[1], sqrt(v[0] * v[0] + v[1] * v[1])) }.toList()
+                .sortedBy { it.second[1] }
+                .distinctBy { it.second[0] }.toMap()
+        }.let { m ->
+            mapOf(
+                "♛" to arrayOf(0.0, 1 / 0.0, 1.0, 12.0),
+                "♟" to arrayOf(1.0, sqrt(2.0)),
+                "♝" to arrayOf(1.0, 12.0),
+                "♜" to arrayOf(0.0, 1 / 0.0, 8.0),
+                "♞" to arrayOf(0.5, 2.0, sqrt(5.0))
+            ).any { e -> e.value.any { v -> m[e.key]?.let { p -> abs(p[0]) == v && p[1] <= e.value.last() } ?: false } }
+        }
+    }
     fun isCheck1(board: Array<Array<String>>):Boolean{
 
 //        val configArray = arrayOf(arrayOf("♔",0.0),arrayOf("♛",0,1.0,-1.0),arrayOf("♜",0),arrayOf("♝",1.0,-1.0),arrayOf("♞",1/2.0,-1/2.0),arrayOf("♟",1.0,-1.0))
@@ -230,4 +272,20 @@ class `Is the King in check` {
             arrayOf(" "," "," "," "," "," "," "," "))
         assertEquals(false, isCheck(board))
     }
+    @Test
+    fun randomCheck() {
+        val board = arrayOf(
+        arrayOf(" "," "," "," "," "," "," "," "),
+        arrayOf(" ","♛"," "," "," "," "," "," "),
+        arrayOf(" "," "," "," "," "," "," "," "),
+        arrayOf("♝"," ","♟","♛"," ","♛"," "," "),
+        arrayOf(" "," "," "," ","♔"," "," "," "),
+        arrayOf(" "," "," "," "," "," "," "," "),
+        arrayOf(" "," "," "," "," ","♛"," "," "),
+        arrayOf(" "," "," "," "," "," "," "," "))
+        assertEquals(true, isCheck(board))
+
+
+    }
+
 }
