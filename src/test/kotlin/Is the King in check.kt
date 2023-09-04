@@ -9,18 +9,26 @@ class `Is the King in check` {
 
     fun isCheck(b: Array<Array<String>>)=b.mapIndexed{y,s->s.mapIndexed{x,s->listOf(s[0].toFloat(),x*1F,y*1F)}}
             .flatten().filter{it[0]!=32F}.sortedBy{it[0]}
-            .let{m->m.map {i->listOf(i[0],i[1]-m[0][1],i[2]-m[0][2])}}
+            .let{m->m.map{i->listOf(i[0],i[1]-m[0][1],i[2]-m[0][2])}}
             .map{val(s,x,y)=it
                 listOf(s,abs(x/y),x*x+y*y)}.sortedBy{it[2]}.distinctBy{it[1]}
             .any {val(s,x,y)=it
                 when(s.toChar()){
-                    '♞'->x==0.5F&&y==5F
+                    '♞'->y==5F
                     '♝'->x==1F
-                    '♟'->x==1F&&y==2F
-                    '♜'->x==0F||x==1/0F
-                    '♛'->x==0F||x==1F||x==1/0F
+                    '♟'->y==2F
+                    '♜'->x==1/0F
+                    '♛'->x==1F||x==1/0F
                     else->false}}
 
+//The correct one:
+//    when(s.toChar()){
+//        '♞'->x==0.5F&&y==5F
+//        '♝'->x==1F
+//        '♟'->y==2F
+//        '♜'->x==1/0F
+//        '♛'->x==1F||x==1/0F
+//        else->false}}
 
     fun isCheck3(b: Array<Array<String>>):Boolean {
         b.forEach { it.forEach {
