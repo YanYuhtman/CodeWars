@@ -1,17 +1,19 @@
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.awt.Stroke
 import kotlin.math.abs
 import kotlin.math.sqrt
 
 class `Is the King in check` {
-    //https://www.codewars.com/kata/5e320fe3358578001e04ad55/
-    fun isCheck(board: Array<Array<String>>):Boolean{
 
-        val configArray = arrayOf(arrayOf("♔",0.0),arrayOf("♛",0,1.0,-1.0),arrayOf("♜",0),arrayOf("♝",1.0,-1.0),arrayOf("♞",1/2.0,-1/2.0),arrayOf("♟",1.0,-1.0))
-        val tmp = board.mapIndexed{x, s -> s.mapIndexed{ y, s -> s to (x to y) } }.flatten().distinctBy { it.first }
-        val tmp1 = tmp.zip(configArray, transform = { a, b -> if(a.first == b[0]) listOf(a,b) })
-        val tmp2 = tmp.associateBy { it.first }
+    //https://www.codewars.com/kata/5e320fe3358578001e04ad55/
+
+    fun isCheck(b: Array<Array<String>>)=b.mapIndexed{y,s->s.mapIndexed{x,s->s to arrayOf(x*1.0,y*1.0)}}.flatten().toMap().let{it["♔"]!!.let{k->it.mapValues{(_,v)->arrayOf(v[0]-k[0],v[1]-k[1])}}.mapValues {(k,v)->arrayOf(v[0]/v[1],sqrt(v[0]*v[0]+v[1]*v[1]))}.toList().distinctBy {it.second[0]}.toMap()}.let{m->mapOf("♛" to arrayOf(0.0,1/0.0,1.0,12.0),"♟" to arrayOf(1.0, sqrt(2.0)),"♝" to arrayOf(1.0,12.0),"♜" to arrayOf(0.0,1/0.0,8.0),"♞" to arrayOf(0.5,2.0,sqrt(5.0))).any{e->e.value.any{v->m[e.key]?.let{p->abs(p[0])==v&&p[1]<=e.value.last()}?:false}}}
+    fun isCheck1(board: Array<Array<String>>):Boolean{
+
+//        val configArray = arrayOf(arrayOf("♔",0.0),arrayOf("♛",0,1.0,-1.0),arrayOf("♜",0),arrayOf("♝",1.0,-1.0),arrayOf("♞",1/2.0,-1/2.0),arrayOf("♟",1.0,-1.0))
+//        val tmp = board.mapIndexed{x, s -> s.mapIndexed{ y, s -> s to (x to y) } }.flatten().distinctBy { it.first }
+//        val tmp1 = tmp.zip(configArray, transform = { a, b -> if(a.first == b[0]) listOf(a,b) })
+//        val tmp2 = tmp.associateBy { it.first }
 
 
 //        val tmp4 = board.mapIndexed {y,s->s.mapIndexed{x,s->s to (x to y)}}.flatten().toSet()
@@ -19,27 +21,37 @@ class `Is the King in check` {
 //        val tmp4 = board.foldIndexed(mutableMapOf(" " to arrayOf(0.0,0.0))){y,a,s->a.also{s.mapIndexed{x,s->it+=s to arrayOf(x.toDouble(),y.toDouble())}}}
 //            .let{m->m["♔"]!!.let {k->m.mapValues{e-> arrayOf(e.value[0]-k[0],e.value[1]-k[1])}}}
 //                { arrayOf(it.value[0]-k[0],it.value[1]-k[1])}}}
-        val tmp4 = board.mapIndexed{y,s->s.mapIndexed{x,s->s to arrayOf(x*1.0,y*1.0)}}.flatten().toMap()
-            .let{it["♔"]!!.let{k->it.mapValues{e->arrayOf(e.value[0]-k[0],e.value[1]-k[1])}}}
-//
-        val configMap = mapOf("♛" to arrayOf(0.0,1.0,12.0),"♟" to arrayOf(1.0, sqrt(2.0)),"♝" to arrayOf(1.0,12.0),"♜" to arrayOf(0.0,8.0),"♞" to arrayOf(0.5,sqrt(5.0)))
-        val configMap2 = listOf("♛|0,1,-1","♟|1,-1","♝|1,-1","♜|0","♞|0.5,-0.5").map{it.split("|").let{it[0] to (it[1].split(",").let{it.map{it.toDouble()}})}}.toMap()
+        val boardMap = board.mapIndexed{ y, s->s.mapIndexed{ x, s->s to arrayOf(x*1.0,y*1.0)}}.flatten().toMap()
+            .let{it["♔"]!!.let{k->it.mapValues{(_,v)->arrayOf(v[0]-k[0],v[1]-k[1])}}}
 
+//        val boardMap2 = board.mapIndexed{y,s->s.mapIndexed{x,s->s to arrayOf(x*1.0,y*1.0)}}.flatten().toMap()
+//            .let{it["♔"]!!.let{k->it.mapValues{(_,v)->arrayOf(v[0]-k[0],v[1]-k[1]) }
+//                .mapValues{(_,v)->
+//                    arrayOf(v[1]/v[0],sqrt(v[0]*v[0]+v[1]*v[1]))}}}.mapValues {(k,v)->  }
+        val boardMap2 = board.mapIndexed{y,s->s.mapIndexed{x,s->s to arrayOf(x*1.0,y*1.0)}}.flatten().toMap()
+            .let{it["♔"]!!.let{k->it.mapValues{(_,v)->arrayOf(v[0]-k[0],v[1]-k[1]) }}
+                .mapValues {(k,v)->
+                    arrayOf(v[0]/v[1],sqrt(v[0]*v[0]+v[1]*v[1]))}.toList().distinctBy { it.second[0] }
+                .toMap()
+            }
+//                .map{(k,v)->
+//                    listOf(k,v[1]/v[0],sqrt(v[0]*v[0]+v[1]*v[1]))
+//                }.distinctBy{it[1]}}}
 
-//        val result = tmp4.let{m->configMap.entries.any{e-> m[e.key]!![0]/m[e.key]!![1]==1}}
-//        val result2 = tmp4.let {m->m["♔"]?.let {k->
-//            configMap.any{e->e.value.any{v->m[e.key]?.let{
-//            pos->((pos[1]-k[1])==v||(pos[0]-k[0])/(pos[1]-k[1])==abs(v))
-//        }?:false}}}
-//            ?:false}
+//        val boardList       = board.mapIndexed{y,s->mapIn}
+        val configMap = mapOf("♛" to arrayOf(0.0,1/0.0,1.0,12.0),"♟" to arrayOf(1.0, sqrt(2.0)),"♝" to arrayOf(1.0,12.0),"♜" to arrayOf(0.0,1/0.0,8.0),"♞" to arrayOf(0.5,2.0,sqrt(5.0)))
 
-        val result2 = tmp4.let {m->
+        val result2 = boardMap.let { m->
             configMap.any{e->e.value.any{v->m[e.key]?.let{
                     p->(p[1]==v||abs((p[0])/(p[1]))==v)&&sqrt(p[0]*p[0]+p[1]*p[1])<=e.value.last()
             }?:false}}}
 
+        val result3 =  boardMap2.let { m->
+            configMap.any{e->e.value.any{v->m[e.key]?.let{
+                    p->abs(p[0])==v&&p[1]<=e.value.last()
+            }?:false}}}
 
-        return result2
+        return result3
 
     }
     fun isCheck0(board: Array<Array<String>>):Boolean{
