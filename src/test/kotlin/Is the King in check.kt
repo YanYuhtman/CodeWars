@@ -12,13 +12,13 @@ class `Is the King in check` {
             .let{m->m.map{i->listOf(i[0],i[1]-m[0][1],i[2]-m[0][2])}}
             .map{val(s,x,y)=it
                 listOf(s,abs(x/y),x*x+y*y)}.sortedBy{it[2]}.distinctBy{it[1]}
-            .any {val(s,x,y)=it
+            .any {val(s,a,c)=it
                 when(s.toChar()){
-                    '♞'->y==5F
-                    '♝'->x==1F
-                    '♟'->y==2F
-                    '♜'->x==1/0F
-                    '♛'->x==1F||x==1/0F
+                    '♞'->c==5F
+                    '♝'->a==1F
+                    '♟'->c==2F
+                    '♜'->a==1/0F
+                    '♛'->a==1F||a==1/0F
                     else->false}}
 
 //The correct one:
