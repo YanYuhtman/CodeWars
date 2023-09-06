@@ -7,19 +7,20 @@ class `Is the King in check` {
 
     //https://www.codewars.com/kata/5e320fe3358578001e04ad55/
 
-    fun isCheck(b: Array<Array<String>>)=b.mapIndexed{y,s->s.mapIndexed{x,s->listOf(s[0].toFloat(),x*1F,y*1F)}}
-            .flatten().filter{it[0]!=32F}.sortedBy{it[0]}
-            .let{m->m.map{i->listOf(i[0],i[1]-m[0][1],i[2]-m[0][2])}}
-            .map{val(s,x,y)=it
-                listOf(s,abs(x/y),x*x+y*y)}.sortedBy{it[2]}.distinctBy{it[1]}
-            .any {val(s,a,c)=it
-                when(s.toChar()){
-                    '♞'->c==5F
-                    '♝'->a==1F
-                    '♟'->c==2F
-                    '♜'->a==1/0F
-                    '♛'->a==1F||a==1/0F
-                    else->false}}
+    fun isCheck(b:Array<Array<String>>)=b.mapIndexed{y,s->s.mapIndexed{x,s->listOf(s[0].toFloat(),x*1F,y*1F)}}
+        .flatten().filter{it[0]!=32F}.sortedBy{it[0]}
+        .let{m->m.map{(s,x,y)->listOf(s,x-m[0][1],y-m[0][2])}}
+        .map{(s,x,y)->
+            listOf(s,abs(x/y),x*x+y*y)}.sortedBy{it[2]}.distinctBy{it[1]}
+        .any {(s,a,c)->
+            when(s.toChar()){
+                '♞'->c==5F
+                '♝'->a==1F
+                '♟'->c==2F
+                '♜'->a==1/0F
+                '♛'->a==1F||a==1/0F
+                else->false}}
+
 
 //The correct one:
 //    when(s.toChar()){
