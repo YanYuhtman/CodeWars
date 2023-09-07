@@ -6,10 +6,24 @@ import kotlin.math.sqrt
 class `Is the King in check` {
 
     //https://www.codewars.com/kata/5e320fe3358578001e04ad55/
-    fun isCheck(b:Array<Array<String>>)=b.mapIndexed{y,s->s.mapIndexed{x,s->listOf(s[0].toFloat(),x*1F,y*1F)}}
+
+
+    fun isCheck(b:Array<Array<String>>):Boolean{
+       return b.mapIndexed{y,s->s.mapIndexed{x,s->listOf(s[0].code*1f,x*1F,y*1F)}}
             .flatten().filter{it[0]!=32F}.sortedBy{it[0]}
             .let{m->m.map{(s,x,y)->(x-m[0][1]to y-m[0][2])
-                .let{(a,b)->listOf(s.toChar()to abs(x/y),s.toChar()to x*x+y*y)}}
+                .let{(a,b)->
+                    listOf(s.toChar()to abs(a/b),s.toChar()to a*a+b*b)}
+            }
+            }.sortedBy{it[1].second}.distinctBy{it[0].second
+            }.flatten().any{it in("♛♛♜♝♞♟").toCharArray().zip(listOf(1F,1/0F,1/0F,1F,5F,2F))}
+
+
+    }
+    fun isCheck5(b:Array<Array<String>>)=b.mapIndexed{y,s->s.mapIndexed{x,s->listOf(s[0].toFloat(),x*1F,y*1F)}}
+            .flatten().filter{it[0]!=32F}.sortedBy{it[0]}
+            .let{m->m.map{(s,x,y)->(x-m[0][1]to y-m[0][2])
+                .let{(a,b)->listOf(s.toChar()to abs(a/b),s.toChar()to a*a+b*b)}}
             }.sortedBy{it[1].second}.distinctBy{it[0].second
             }.flatten().any{it in("♛♛♜♝♞♟").toCharArray().zip(listOf(1F,1/0F,1/0F,1F,5F,2F))}
 
