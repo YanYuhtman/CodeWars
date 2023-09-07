@@ -6,17 +6,23 @@ import kotlin.math.sqrt
 class `Is the King in check` {
 
     //https://www.codewars.com/kata/5e320fe3358578001e04ad55/
-
     fun isCheck(b:Array<Array<String>>)=b.mapIndexed{y,s->s.mapIndexed{x,s->listOf(s[0].toFloat(),x*1F,y*1F)}}
+            .flatten().filter{it[0]!=32F}.sortedBy{it[0]}
+            .let{m->m.map{(s,x,y)->(x-m[0][1]to y-m[0][2])
+                .let{(a,b)->listOf(s.toChar()to abs(x/y),s.toChar()to x*x+y*y)}}
+            }.sortedBy{it[1].second}.distinctBy{it[0].second
+            }.flatten().any{it in("♛♛♜♝♞♟").toCharArray().zip(listOf(1F,1/0F,1/0F,1F,5F,2F))}
+
+    fun isCheck4(b:Array<Array<String>>)=b.mapIndexed{y,s->s.mapIndexed{x,s->listOf(s[0].toFloat(),x*1F,y*1F)}}
         .flatten().filter{it[0]!=32F}.sortedBy{it[0]}
-        .let{m->m.map{(s,x,y)->listOf(s,x-m[0][1],y-m[0][2])}}
-        .map{(s,x,y)->
-            listOf(s,abs(x/y),x*x+y*y)}.sortedBy{it[2]}.distinctBy{it[1]}
+        .let{m->m.map{(s,x,y)->(x-m[0][1]to y-m[0][2])
+            .let{(a,b)->listOf(s,abs(a/b),a*a+b*b)}}}
+        .sortedBy{it[2]}.distinctBy{it[1]}
         .any {(s,a,c)->
             when(s.toChar()){
+                '♟'->c==2F
                 '♞'->c==5F
                 '♝'->a==1F
-                '♟'->c==2F
                 '♜'->a==1/0F
                 '♛'->a==1F||a==1/0F
                 else->false}}
