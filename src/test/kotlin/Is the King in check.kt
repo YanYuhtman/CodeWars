@@ -1,11 +1,47 @@
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import kotlin.math.abs
-import kotlin.math.sqrt
+import kotlin.math.*
 
+fun String.myFun()=true
 class `Is the King in check` {
 
     //https://www.codewars.com/kata/5e320fe3358578001e04ad55/
+
+    fun isCheck7(b:Array<Array<String>>):Boolean{
+        for(p in ("♛|011011|♜|0110|♝|11|♞|1221|♟|11".split('|').chunked(2).map{it[0]to it[1].chunked(2).map{listOf(it[0].digitToInt(),it[1].digitToInt())}}).toMap()){
+            val tmp = "+1+1+1-1-1+1-1-1".chunked(2).map {it.toInt()}.chunked(2).map {d->p.value.map {s->(d[0]*s[0] to d[0]*s[1])}}.flatten().distinct()
+            for(s in tmp)
+                if(b[s.first][s.second] == "♔")
+                    return true
+        }
+          val directions="+1+1+1-1-1+1-1-1".chunked(2).map {it.toInt()}.chunked(2)
+          val b         ="-?\\d".toRegex().findAll("111-1-11-1-1").asIterable().map {it.value.toInt()}.chunked(2)
+        val directions2 =listOf((1 to 1),(1 to -1),(-1 to 1),(-1 to-1)).map{listOf(it.first,it.second)}
+
+        val steps = ("♛|011011|♜|0110|♝|11|♞|1221|♟|11".split('|').chunked(2).map{it[0]to it[1].chunked(2).map{listOf(it[0].digitToInt(),it[1].digitToInt())}}).toMap()
+        val steps2 = mapOf("♛" to listOf((0 to 1),(1 to 0),(1 to 1)),"♜" to listOf((0 to 1),(1 to 0)),"♝" to listOf(1 to 1),"♞" to listOf((1 to 2),(2 to 1)),"♟" to listOf((-1 to 1),(1 to 1)))
+//        val directionz = listOf((0 to 0),(0 to 1),(1 to 0),(1 to 1))
+
+
+//        for(x in 0..7)
+//            for(y in 0..7){
+//                val steps = (-1..1).zip
+//                val peaces = mapOf<String,List<Pair<Int,Int>>>("♛",(-1 to ))
+//                val peace = b[x][y]
+//                if(peace != " "){
+//
+//                }
+//
+//                    for(x0 in -1..1)
+//                        for(y0 in -1 ..1)
+//
+//                }
+//
+//            }
+
+        return false
+
+    }
 
     fun isCheck(b:Array<Array<String>>)=b.mapIndexed{y,S->S.mapIndexed{x,s->listOf(s[0].code*1f,x*1F,y*1F)}}
             .flatten().filter{it[0]!=32F}.sortedBy{it[0]}
