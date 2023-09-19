@@ -62,15 +62,17 @@ class `Plants and Zombies` {
 
                 }
             }
-
+            var moveNumber = 0
             fun play():Int?{
-                var moveNumber = 0
+
                 var status = 0
 
                 while (status == 0) {
                     println(this)
                     makeStep()
+                    println(this)
                     firePonds()
+                    println(this)
                     fireASes()
                     moveNumber += 1
                     status = checkWinningStatus()
