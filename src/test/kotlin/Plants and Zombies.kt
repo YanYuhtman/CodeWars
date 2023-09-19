@@ -30,7 +30,7 @@ class `Plants and Zombies` {
                 val soldiers = lawn.mapIndexed { r, s-> s.mapNotNull{p-> if (p.isDigit()) (r to p.digitToInt()) else null } }.flatten()
                 soldiers.forEach { soldier->
                     for(i in (1 .. soldier.second))
-                        zombies.filter { it[0] < 0 && it[1] == soldier.first }.minByOrNull { it[0] }
+                        zombies.filter { it[0] <= 0 && it[1] == soldier.first }.minByOrNull { it[0] }
                             ?.let { it[2]-=1; if(it[2] <= 0) zombies = zombies.toMutableList().apply { this.remove(it) }.toTypedArray() }
                             ?: break
                 }
@@ -42,17 +42,17 @@ class `Plants and Zombies` {
                         .sortedWith(compareByDescending <Pair<Int, Int>> { it.second }.thenBy { it.first })
                 soldiers.forEach { S ->
                     val targets = zombies.mapIndexedNotNull { i, z ->
-                        var out: Pair<IntArray, Int>? = null
+                        var out: Pair<IntArray, Pair<Double,Int>>? = null
                         val dr = z[1] - S.first
                         val dc = lawn[z[1]].length - 1 + z[0] - S.second
-                        if (z[0] < 0 && dc > 0) {
+                        if (z[0] <= 0 && dc > 0) {
                             val angle = if (dr == 0) 0.0 else dr / dc.toDouble()
                             if (abs(angle) == 1.0 || angle == 0.0)
-                                out = (z to dr * dr + dc * dc)
+                                out = (z to (angle to dr * dr + dc * dc))
 
                         }
                         out
-                    }.sortedBy { it.second }.distinctBy { it.second }
+                    }.sortedWith(compareBy<Pair<IntArray, Pair<Double, Int>>> { it.second.first }.thenBy { it.second.second }).distinctBy { it.second.first }
 
                     targets.forEach {
                         it.first[2] -= 1
@@ -64,7 +64,7 @@ class `Plants and Zombies` {
             }
 
             fun play():Int?{
-                var moveNumber = 1
+                var moveNumber = 0
                 var status = 0
 
                 while (status == 0) {
@@ -83,12 +83,13 @@ class `Plants and Zombies` {
 
             override fun toString(): String {
                 val zombies = zombies.filter { it[0] <= 0 }.associateBy { (it[1] to lawn[0].length - 1 + it[0]) }
-                val out = StringBuilder((0 until lawn[0].length).toList().toString()).append("\n")
+                val out = StringBuilder("  " + (0 until lawn[0].length).toList().toString()).append("\n")
                 return lawn.foldIndexed(out) { r, S, s->
+                    S.append("$r|")
                     s.mapIndexed{ c, ch->
                         val per = if(c == 0) 2 else 3
-                        val _ch = zombies[(r to c)]?.let { 'Z' } ?: ch
-                        S.append("%${per}c".format(_ch))
+                        val _ch = zombies[(r to c)]?.let { "Z${it[2]}" } ?: if(ch == ' ') "${'\u00B7'}" else "$ch"
+                        S.append("%${per}s".format(_ch))
                     }
                     S.append("\n");
                 }.toString()
@@ -122,22 +123,22 @@ class `Plants and Zombies` {
 //                intArrayOf(2,4,15),
 //                intArrayOf(3,2,16),
 //                intArrayOf(3,3,13))),
-//        Pair(
-//            arrayOf(
-//                "11      ",
-//                " 2S     ",
-//                "11S     ",
-//                "3       ",
-//                "13      "),
-//            arrayOf(
-//                intArrayOf(0,3,16),
-//                intArrayOf(2,2,15),
-//                intArrayOf(2,1,16),
-//                intArrayOf(4,4,30),
-//                intArrayOf(4,2,12),
-//                intArrayOf(5,0,14),
-//                intArrayOf(7,3,16),
-//                intArrayOf(7,0,13))),
+        Pair(
+            arrayOf(
+                "11      ",
+                " 2S     ",
+                "11S     ",
+                "3       ",
+                "13      "),
+            arrayOf(
+                intArrayOf(0,3,16),
+                intArrayOf(2,2,15),
+                intArrayOf(2,1,16),
+                intArrayOf(4,4,30),
+                intArrayOf(4,2,12),
+                intArrayOf(5,0,14),
+                intArrayOf(7,3,16),
+                intArrayOf(7,0,13))),
 //        Pair(
 //            arrayOf(
 //                "12        ",
@@ -200,5 +201,5 @@ class `Plants and Zombies` {
 //                intArrayOf(11,4,23),
 //                intArrayOf(12,1,15),
 //                intArrayOf(13,3,22)))
-//    )
+    )
 }
