@@ -11,12 +11,13 @@ class `Plants and Zombies` {
 
             fun makeStep(){
                 zombies.forEach {
+                    it[0] -= 1
                     if(it[0] < 1) {
                         val r = it[1]
                         val c = lawn[r].length - 1 + it[0]
                         lawn[r] = lawn[r].mapIndexed { col, ch -> if (col == c && ch != ' ') 'x' else ch }.joinToString("")
                     }
-                    it[0] -= 1
+
                 }
             }
             fun checkWinningStatus():Int{
@@ -31,7 +32,7 @@ class `Plants and Zombies` {
                 soldiers.forEach { soldier->
                     for(i in (1 .. soldier.second))
                         zombies.filter { it[0] <= 0 && it[1] == soldier.first }.minByOrNull { it[0] }
-                            ?.let { it[2]-=1; if(it[2] <= 0) zombies = zombies.toMutableList().apply { this.remove(it) }.toTypedArray() }
+                            ?.let { it[2]-=1; if(it[2] < 0) zombies = zombies.toMutableList().apply { this.remove(it) }.toTypedArray() }
                             ?: break
                 }
             }
@@ -56,7 +57,7 @@ class `Plants and Zombies` {
 
                     targets.forEach {
                         it.first[2] -= 1
-                        if (it.first[2] <= 0)
+                        if (it.first[2] < 0)
                             zombies = zombies.toMutableList().apply { this.remove(it.first) }.toTypedArray()
                     }
 
@@ -106,41 +107,42 @@ class `Plants and Zombies` {
     }
 
     @Test
-    fun runExamples() = exampleSols.zip(exampleTests).forEach { (sol,tst) -> assertEquals(sol,PNZ.plantsAndZombies(tst.first,tst.second)) }
+    fun runExamples() = exampleSols.zip(exampleTests).forEach { (sol,tst) ->
+        assertEquals(sol,PNZ.plantsAndZombies(tst.first,tst.second)) }
 
     private val exampleSols = listOf(10,12,20,19,null)
 
     private val exampleTests = listOf(
-//        Pair(
-//            arrayOf(
-//                "2       ",
-//                "  S     ",
-//                "21  S   ",
-//                "13      ",
-//                "2 3     "),
-//            arrayOf(
-//                intArrayOf(0,4,28),
-//                intArrayOf(1,1,6),
-//                intArrayOf(2,0,10),
-//                intArrayOf(2,4,15),
-//                intArrayOf(3,2,16),
-//                intArrayOf(3,3,13))),
         Pair(
             arrayOf(
-                "11      ",
-                " 2S     ",
-                "11S     ",
-                "3       ",
-                "13      "),
+                "2       ",
+                "  S     ",
+                "21  S   ",
+                "13      ",
+                "2 3     "),
             arrayOf(
-                intArrayOf(0,3,16),
-                intArrayOf(2,2,15),
-                intArrayOf(2,1,16),
-                intArrayOf(4,4,30),
-                intArrayOf(4,2,12),
-                intArrayOf(5,0,14),
-                intArrayOf(7,3,16),
-                intArrayOf(7,0,13))),
+                intArrayOf(0,4,28),
+                intArrayOf(1,1,6),
+                intArrayOf(2,0,10),
+                intArrayOf(2,4,15),
+                intArrayOf(3,2,16),
+                intArrayOf(3,3,13))),
+//        Pair(
+//            arrayOf(
+//                "11      ",
+//                " 2S     ",
+//                "11S     ",
+//                "3       ",
+//                "13      "),
+//            arrayOf(
+//                intArrayOf(0,3,16),
+//                intArrayOf(2,2,15),
+//                intArrayOf(2,1,16),
+//                intArrayOf(4,4,30),
+//                intArrayOf(4,2,12),
+//                intArrayOf(5,0,14),
+//                intArrayOf(7,3,16),
+//                intArrayOf(7,0,13))),
 //        Pair(
 //            arrayOf(
 //                "12        ",
