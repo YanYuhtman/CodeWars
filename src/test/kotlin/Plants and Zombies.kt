@@ -14,7 +14,7 @@ class `Plants and Zombies` {
                     it[0] -= 1
                     if(it[0] < 1) {
                         val r = it[1]
-                        val c = lawn[r].length - 1 + it[0]
+                        val c = lawn[r].length -1 + it[0]
                         lawn[r] = lawn[r].mapIndexed { col, ch -> if (col == c && ch != ' ') 'x' else ch }.joinToString("")
                     }
 
@@ -32,7 +32,7 @@ class `Plants and Zombies` {
                 soldiers.forEach { soldier->
                     for(i in (1 .. soldier.second))
                         zombies.filter { it[0] <= 0 && it[1] == soldier.first }.minByOrNull { it[0] }
-                            ?.let { it[2]-=1; if(it[2] < 0) zombies = zombies.toMutableList().apply { this.remove(it) }.toTypedArray() }
+                            ?.let { it[2]-=1; if(it[2] <= 0) zombies = zombies.toMutableList().apply { this.remove(it) }.toTypedArray() }
                             ?: break
                 }
             }
@@ -57,7 +57,7 @@ class `Plants and Zombies` {
 
                     targets.forEach {
                         it.first[2] -= 1
-                        if (it.first[2] < 0)
+                        if (it.first[2] <= 0)
                             zombies = zombies.toMutableList().apply { this.remove(it.first) }.toTypedArray()
                     }
 
@@ -69,12 +69,13 @@ class `Plants and Zombies` {
                 var status = 0
 
                 while (status == 0) {
-                    println(this)
-                    makeStep()
-                    println(this)
+
+//                    println(this)
                     firePonds()
-                    println(this)
+//                    println(this)
                     fireASes()
+//                    println(this)
+                    makeStep()
                     moveNumber += 1
                     status = checkWinningStatus()
                 }
@@ -127,83 +128,83 @@ class `Plants and Zombies` {
                 intArrayOf(2,4,15),
                 intArrayOf(3,2,16),
                 intArrayOf(3,3,13))),
-//        Pair(
-//            arrayOf(
-//                "11      ",
-//                " 2S     ",
-//                "11S     ",
-//                "3       ",
-//                "13      "),
-//            arrayOf(
-//                intArrayOf(0,3,16),
-//                intArrayOf(2,2,15),
-//                intArrayOf(2,1,16),
-//                intArrayOf(4,4,30),
-//                intArrayOf(4,2,12),
-//                intArrayOf(5,0,14),
-//                intArrayOf(7,3,16),
-//                intArrayOf(7,0,13))),
-//        Pair(
-//            arrayOf(
-//                "12        ",
-//                "3S        ",
-//                "2S        ",
-//                "1S        ",
-//                "2         ",
-//                "3         "),
-//            arrayOf(
-//                intArrayOf(0,0,18),
-//                intArrayOf(2,3,12),
-//                intArrayOf(2,5,25),
-//                intArrayOf(4,2,21),
-//                intArrayOf(6,1,35),
-//                intArrayOf(6,4,9),
-//                intArrayOf(8,0,22),
-//                intArrayOf(8,1,8),
-//                intArrayOf(8,2,17),
-//                intArrayOf(10,3,18),
-//                intArrayOf(11,0,15),
-//                intArrayOf(12,4,21))),
-//        Pair(
-//            arrayOf(
-//                "12      ",
-//                "2S      ",
-//                "1S      ",
-//                "2S      ",
-//                "3       "),
-//            arrayOf(
-//                intArrayOf(0,0,15),
-//                intArrayOf(1,1,18),
-//                intArrayOf(2,2,14),
-//                intArrayOf(3,3,15),
-//                intArrayOf(4,4,13),
-//                intArrayOf(5,0,12),
-//                intArrayOf(6,1,19),
-//                intArrayOf(7,2,11),
-//                intArrayOf(8,3,17),
-//                intArrayOf(9,4,18),
-//                intArrayOf(10,0,15),
-//                intArrayOf(11,4,14))),
-//        Pair(
-//            arrayOf(
-//                "1         ",
-//                "SS        ",
-//                "SSS       ",
-//                "SSS       ",
-//                "SS        ",
-//                "1         "),
-//            arrayOf(
-//                intArrayOf(0,2,16),
-//                intArrayOf(1,3,19),
-//                intArrayOf(2,0,18),
-//                intArrayOf(4,2,21),
-//                intArrayOf(6,3,20),
-//                intArrayOf(7,5,17),
-//                intArrayOf(8,1,21),
-//                intArrayOf(8,2,11),
-//                intArrayOf(9,0,10),
-//                intArrayOf(11,4,23),
-//                intArrayOf(12,1,15),
-//                intArrayOf(13,3,22)))
+        Pair(
+            arrayOf(
+                "11      ",
+                " 2S     ",
+                "11S     ",
+                "3       ",
+                "13      "),
+            arrayOf(
+                intArrayOf(0,3,16),
+                intArrayOf(2,2,15),
+                intArrayOf(2,1,16),
+                intArrayOf(4,4,30),
+                intArrayOf(4,2,12),
+                intArrayOf(5,0,14),
+                intArrayOf(7,3,16),
+                intArrayOf(7,0,13))),
+        Pair(
+            arrayOf(
+                "12        ",
+                "3S        ",
+                "2S        ",
+                "1S        ",
+                "2         ",
+                "3         "),
+            arrayOf(
+                intArrayOf(0,0,18),
+                intArrayOf(2,3,12),
+                intArrayOf(2,5,25),
+                intArrayOf(4,2,21),
+                intArrayOf(6,1,35),
+                intArrayOf(6,4,9),
+                intArrayOf(8,0,22),
+                intArrayOf(8,1,8),
+                intArrayOf(8,2,17),
+                intArrayOf(10,3,18),
+                intArrayOf(11,0,15),
+                intArrayOf(12,4,21))),
+        Pair(
+            arrayOf(
+                "12      ",
+                "2S      ",
+                "1S      ",
+                "2S      ",
+                "3       "),
+            arrayOf(
+                intArrayOf(0,0,15),
+                intArrayOf(1,1,18),
+                intArrayOf(2,2,14),
+                intArrayOf(3,3,15),
+                intArrayOf(4,4,13),
+                intArrayOf(5,0,12),
+                intArrayOf(6,1,19),
+                intArrayOf(7,2,11),
+                intArrayOf(8,3,17),
+                intArrayOf(9,4,18),
+                intArrayOf(10,0,15),
+                intArrayOf(11,4,14))),
+        Pair(
+            arrayOf(
+                "1         ",
+                "SS        ",
+                "SSS       ",
+                "SSS       ",
+                "SS        ",
+                "1         "),
+            arrayOf(
+                intArrayOf(0,2,16),
+                intArrayOf(1,3,19),
+                intArrayOf(2,0,18),
+                intArrayOf(4,2,21),
+                intArrayOf(6,3,20),
+                intArrayOf(7,5,17),
+                intArrayOf(8,1,21),
+                intArrayOf(8,2,11),
+                intArrayOf(9,0,10),
+                intArrayOf(11,4,23),
+                intArrayOf(12,1,15),
+                intArrayOf(13,3,22)))
     )
 }
