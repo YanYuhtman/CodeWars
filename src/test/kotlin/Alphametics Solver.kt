@@ -51,10 +51,12 @@ class `Alphametics Solver` {
                 sumVariations.forEach { values ->
                     val outDigits = tmpDigits.toMutableList().apply { values.forEach { this.remove(it) } }
                     var tmpPuzzle = _puzzle
-                    replacementChars.zip(values.toList()) { a: Char, b: Int -> a to b }.toMap()
-                        .forEach { tmpPuzzle = tmpPuzzle.replace(it.key, it.value.digitToChar()) }
+                    val replacement = replacementChars.zip(values.toList()) { a: Char, b: Int -> a to b }.toMap()
+                    replacement.forEach { tmpPuzzle = tmpPuzzle.replace(it.key, it.value.digitToChar()) }
                     alphametics(tmpPuzzle, outDigits, rIndex + 1, values.sum() / 10)
-                    println(tmpPuzzle)
+                    print(tmpPuzzle); print("\t" + outDigits);print("\t " + replacement);println("\t " + replacementChars)
+
+
 
                 }
             }
@@ -98,8 +100,8 @@ class `Alphametics Solver` {
     fun `Example Tests`() {
 //        runTest("SEND = SEND", "3210 = 3210")
 //        runTest("SEND + MORE = MONEY","9567 + 1085 = 10652")
-//        runTest("ZEROES + ONES = BINARY","698392 + 3192 = 701584")
-        runTest("COUPLE + COUPLE = QUARTET","653924 + 653924 = 1307848")
+        runTest("ZEROES + ONES = BINARY","698392 + 3192 = 701584")
+//        runTest("COUPLE + COUPLE = QUARTET","653924 + 653924 = 1307848")
 //        runTest("DO + YOU + FEEL = LUCKY","57 + 870 + 9441 = 10368")
 //        runTest("ELEVEN + NINE + FIVE + FIVE = THIRTY","797275 + 5057 + 4027 + 4027 = 810386")
     }
