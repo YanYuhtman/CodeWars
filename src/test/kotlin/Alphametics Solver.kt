@@ -18,16 +18,31 @@ class `Alphametics Solver` {
         }
         return results
     }
-    fun getSumVariations(addition:Int, len:Int, from:List<Int>, sum:Int) = combinations(len,from).filter { (it.sum() + addition) % 10 ==  sum}
+    fun getSumVariations(sumChars: List<Char>, sum:Int, addition: Int, from: List<Int>):List<Pair<Map<Char,Int>,Int>>{
+        val addition = addition + sumChars.sumOf { if(it.isDigit()) it.digitToInt() else 0 }
+        val sumCharsMap = sumChars.filter { it.isLetter() }.groupBy { it }.map { it.key to it.value.size }
+
+        val combinations = combinations(sumCharsMap.size,from)
+
+        val result:MutableList<Pair<Map<Char,Int>,Int>> = mutableListOf()
+
+        combinations.forEach {combination->
+            val tmp = sumCharsMap.zip(combination.toList()).map { it.first.first to intArrayOf(it.first.second,it.second) }.toMap()
+            val sumOf  = tmp.values.sumOf { it[0]*it[1] } + addition
+            if(sumOf % 10 == sum)
+                result.add(tmp.map { (it.key to it.value[1])}.toMap() to sumOf/10)
+        }
+        return result
+    }
 
 
-    val resultVariants:MutableList<String> = mutableListOf()
-    fun alphametics(puzzle: String, digits:List<Int>, rIndex:Int = 1, addition: Int = 0){
+    fun alphametics(puzzle: String, digits:List<Int>,results:MutableList<String>, rIndex:Int = 1, addition: Int = 0){
         val words = puzzle.split("\\s*[+=]\\s*".toRegex())
+        if (words.any { it.startsWith('0') })
+            return
         if(rIndex > words.last().length) {
-            if(words.sumOf { if(it === words.last()) 0 else it.toInt() } == words.last().toInt()) {
-                resultVariants.add(puzzle)
-            }
+            if(words.sumOf { if(it === words.last()) 0 else it.toInt() } == words.last().toInt())
+                results.add(puzzle)
             return
         }
 
@@ -42,47 +57,42 @@ class `Alphametics Solver` {
 
             val replacementChars = sumChars.mapNotNull { if(it.isLetter()) it else null }
             val additions = sumChars.sumOf { if(it.isDigit()) it.digitToInt() else 0 } + addition
-            if(replacementChars.isEmpty() && additions % 10 == digit) {
-                alphametics(_puzzle, tmpDigits, rIndex + 1, additions / 10)
-                println(_puzzle)
-            }
+            if(replacementChars.isEmpty() && additions % 10 == digit)
+                alphametics(_puzzle, tmpDigits, results, rIndex + 1, additions / 10)
             else {
-                val sumVariations = getSumVariations(additions, replacementChars.size, tmpDigits, digit)
+                val sumVariations = getSumVariations(replacementChars,digit,additions,tmpDigits)
                 sumVariations.forEach { values ->
-                    val outDigits = tmpDigits.toMutableList().apply { values.forEach { this.remove(it) } }
+                    val outDigits = tmpDigits.toMutableList().apply { values.first.forEach { this.remove(it.value) } }
                     var tmpPuzzle = _puzzle
-                    val replacement = replacementChars.zip(values.toList()) { a: Char, b: Int -> a to b }.toMap()
-                    replacement.forEach { tmpPuzzle = tmpPuzzle.replace(it.key, it.value.digitToChar()) }
-                    alphametics(tmpPuzzle, outDigits, rIndex + 1, values.sum() / 10)
-                    print(tmpPuzzle); print("\t" + outDigits);print("\t " + replacement);println("\t " + replacementChars)
-
-
-
+                    values.first.forEach { k,v-> tmpPuzzle = tmpPuzzle.replace(k,v.digitToChar()) }
+                    alphametics(tmpPuzzle, outDigits, results,rIndex + 1, values.second)
                 }
             }
         }
     }
 
     fun alphametics(puzzle: String): String {
-        alphametics(puzzle, (0..9).toList())
-        return resultVariants[0]
+        val results = mutableListOf<String>()
+        alphametics(puzzle, (0..9).toList(),results)
+        return results[0]
     }
     private fun runTest(puzzle:String,sol:String) = assertEquals(sol,alphametics(puzzle))
 
-
     @Test
-    fun testVariations(){
-        val _testVariations:(expectedItems:Int,items:List<IntArray>)->Unit = {expectedItems, items ->
+    fun testVariations2(){
+        val _testVariations:(expectedItems:Int,items:List<Pair<Map<Char,Int>,Int>>)->Unit = {expectedItems, items ->
+            println( items.map { "${it.first.map { "${it}" }},(${it.second})" })
             assertEquals(expectedItems,items.size)
-            println( items.map { "${it.map { "$it" }}" })
         }
-        _testVariations(2,getSumVariations(0,2, listOf(0,1),1))
-        _testVariations(0,getSumVariations(0,2, listOf(1,2),1))
-        _testVariations(1,getSumVariations(0,1, listOf(1),1))
-        _testVariations(2,getSumVariations(1,2, listOf(0,1),2))
-        _testVariations(2,getSumVariations(0,2, listOf(1,5,6),1))
-        _testVariations(6,getSumVariations(0,2, listOf(0,1,2,3,4,5,6,7),1))
+//        _testVariations(6,getSumVariations("ABC".toList(),6,0, listOf(1,2,3)))
+//        _testVariations(0,getSumVariations("ABC".toList(),6,0, listOf(1,2)))
+//        _testVariations(1,getSumVariations("AAC".toList(),5,0, listOf(1,2)))
+//        _testVariations(2,getSumVariations("AABB".toList(),7,1, listOf(1,2)))
+//        _testVariations(12,getSumVariations("AABCD".toList(),7,0, listOf(0,1,2,3,4,5)))
+
+        _testVariations(4,getSumVariations("AB".toList(),1,0, listOf(9,2,1,0)))
     }
+
 
     @Test
     fun testCombinations(){
@@ -99,11 +109,11 @@ class `Alphametics Solver` {
     @Test
     fun `Example Tests`() {
 //        runTest("SEND = SEND", "3210 = 3210")
-//        runTest("SEND + MORE = MONEY","9567 + 1085 = 10652")
+        runTest("SEND + MORE = MONEY","9567 + 1085 = 10652")
         runTest("ZEROES + ONES = BINARY","698392 + 3192 = 701584")
-//        runTest("COUPLE + COUPLE = QUARTET","653924 + 653924 = 1307848")
-//        runTest("DO + YOU + FEEL = LUCKY","57 + 870 + 9441 = 10368")
-//        runTest("ELEVEN + NINE + FIVE + FIVE = THIRTY","797275 + 5057 + 4027 + 4027 = 810386")
+        runTest("COUPLE + COUPLE = QUARTET","653924 + 653924 = 1307848")
+        runTest("DO + YOU + FEEL = LUCKY","57 + 870 + 9441 = 10368")
+        runTest("ELEVEN + NINE + FIVE + FIVE = THIRTY","797275 + 5057 + 4027 + 4027 = 810386")
     }
 
 }
