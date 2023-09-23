@@ -1,5 +1,8 @@
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.util.LinkedList
+import java.util.PriorityQueue
+import java.util.Queue
 import kotlin.random.Random
 
 class `Alphametics Solver` {
@@ -20,8 +23,7 @@ class `Alphametics Solver` {
         return results
     }
     fun getSumVariations(sumChars: List<Char>, sum:Int, addition: Int, from: List<Int>):List<Pair<Map<Char,Int>,Int>>{
-        val addition = addition + sumChars.sumBy { if(it.isDigit()) "$it".toInt() else 0 }
-        val sumCharsMap = sumChars.filter { it.isLetter() }.groupBy { it }.map { it.key to it.value.size }
+        val sumCharsMap = sumChars./*filter { it.isLetter() }.*/groupBy { it }.map { it.key to it.value.size }
 
         val combinations = combinations(sumCharsMap.size,from)
 
@@ -35,7 +37,6 @@ class `Alphametics Solver` {
         }
         return result
     }
-
 
     fun alphametics_rec(puzzle: String, digits:List<Int>, results:MutableList<String>, rIndex:Int = 1, addition: Int = 0){
         if(results.isNotEmpty())
@@ -78,6 +79,54 @@ class `Alphametics Solver` {
         val results = mutableListOf<String>()
         alphametics_rec(puzzle, (0..9).toList(),results)
         return results[0]
+    }
+
+    data class Puzzle(val equasion: String, val availableDigits:List<Int> = (0..9).toList(), val rIndex:Int = 1, val sumAddition:Int = 0){}
+
+
+    //WORKS A LOT WORSE THAN RECURSION
+    fun alphametics_Queue(p: String):String{
+        val queue =  PriorityQueue<Puzzle>(compareBy { it.rIndex })
+        queue.add(Puzzle(p))
+        while (queue.isNotEmpty()) {
+
+            val puzzle = queue.poll()!!
+
+            val words = puzzle.equasion.split("\\s*[+=]\\s*".toRegex())
+            if (words.any { it.startsWith('0') })
+                continue
+            if (puzzle.rIndex > words.last().length) {
+                if (words.sumBy { if (it === words.last()) 0 else it.toInt() } == words.last().toInt())
+                    return puzzle.equasion
+                else continue
+            }
+
+            val eqChar = puzzle.equasion.let { it[it.length - puzzle.rIndex] }
+            val _digits = if (eqChar.isLetter()) puzzle.availableDigits else listOf("$eqChar".toInt())
+            for (digit in _digits) {
+                val tmpDigits = puzzle.availableDigits.toMutableList().apply { this.remove(digit) }
+
+                val _puzzle = puzzle.equasion.replace(eqChar, "$digit"[0])
+                val sumChars = _puzzle.split("\\s*[+=]\\s*".toRegex())
+                    .let { words -> words.mapNotNull { if (words.last() === it || it.length < puzzle.rIndex) null else it[it.length - puzzle.rIndex] } }
+
+                val replacementChars = sumChars.mapNotNull { if (it.isLetter()) it else null }
+                val additions = sumChars.sumBy { if (it.isDigit()) "$it".toInt() else 0 } + puzzle.sumAddition
+                if (replacementChars.isEmpty() && additions % 10 == digit)
+                    queue.add(Puzzle(_puzzle,tmpDigits,puzzle.rIndex + 1,additions/10))
+                else {
+                    val sumVariations = getSumVariations(replacementChars, digit, additions, tmpDigits)
+                    sumVariations.forEach { values ->
+                        val outDigits =
+                            tmpDigits.toMutableList().apply { values.first.forEach { this.remove(it.value) } }
+                        var tmpPuzzle = _puzzle
+                        values.first.forEach { k, v -> tmpPuzzle = tmpPuzzle.replace(k, "$v"[0]) }
+                        queue.add(Puzzle(tmpPuzzle,outDigits,puzzle.rIndex + 1, values.second))
+                    }
+                }
+            }
+        }
+        return ""
     }
     private fun runTest(puzzle:String,sol:String) = assertEquals(sol,alphametics(puzzle))
 
@@ -165,8 +214,9 @@ class `Alphametics Solver` {
 
         println("Executing: ${pazzles.size} tests")
         pazzles.forEach {
-            println("Running test: $it")
-            println("Result: ${alphametics(it.first)}")
+//            println("Running test: $it")
+//            println("Result: ${alphametics(it.first)}")
+            alphametics(it.first)
         }
         println("Running for ${System.currentTimeMillis() - startTime} msec")
 
