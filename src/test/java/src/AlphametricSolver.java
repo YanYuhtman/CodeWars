@@ -116,10 +116,11 @@ public class AlphametricSolver {
         private boolean validateEquation(String[] words){
             try{
                 int sum = 0;
-                for(int i = 0; i < words.length - 1; i++) {
+                for(int i = 0; i < words.length; i++) {
                     if(words[i].charAt(0) == '0')
                         return false;
-                    sum += Integer.parseInt(words[i]);
+                    if(i < words.length - 1)
+                        sum += Integer.parseInt(words[i]);
                 }
                 return sum == Integer.parseInt(words[words.length - 1]);
             }catch (NumberFormatException e){
@@ -221,9 +222,9 @@ public class AlphametricSolver {
 
     private static final String[][] fixedTests = {
 //            {"SEND + MORE = MONEY",                  "9567 + 1085 = 10652"},
-            {"ZEROES + ONES = BINARY",               "698392 + 3192 = 701584"},
+//            {"ZEROES + ONES = BINARY",               "698392 + 3192 = 701584"},
 //            {"COUPLE + COUPLE = QUARTET",            "653924 + 653924 = 1307848"},
-//            {"DO + YOU + FEEL = LUCKY",              "57 + 870 + 9441 = 10368"},
+            {"DO + YOU + FEEL = LUCKY",              "57 + 870 + 9441 = 10368"},
 //            {"ELEVEN + NINE + FIVE + FIVE = THIRTY", "797275 + 5057 + 4027 + 4027 = 810386"},
     };
 
