@@ -37,39 +37,40 @@ public class AlphametricSolver {
         List<AlphametricChar> aChars = new ArrayList<>();
         Arrays.sort(chars);
         AlphametricChar prevChar = null;
-        for(char ch : chars){
-            if(prevChar != null) {
-                if (ch == prevChar.aChar)
-                    prevChar.repeats += 1;
-                else
-                    aChars.add(prevChar);
+        for (char ch : chars) {
+            if(prevChar == null){
+                prevChar = new AlphametricChar(ch);
+            }else if (ch == prevChar.aChar) {
+                prevChar.repeats += 1;
+            }else {
+                aChars.add(prevChar);
+                prevChar = new AlphametricChar(ch);
             }
-            prevChar = new AlphametricChar(ch);
         }
         if (aChars.size() == 0 || aChars.get(aChars.size() - 1) != prevChar)
             aChars.add(prevChar);
 
 
         List<int[]> combinations = combinationsGenerator(aChars.size(),fromDigits);
-        for(Iterator<int[]> iter = combinations.iterator(); iter.hasNext();){
-            int[] combination = iter.next();
-            if((Arrays.stream(combination).sum() + addition) % 10 != sum)
-                iter.remove();
+        for(Iterator<int[]> cIter = combinations.iterator(); cIter.hasNext();){
+            int[] combination = cIter.next();
+            int _sum = 0;
+            for(int i = 0; i < combination.length;i++)
+                _sum += combination[i] * aChars.get(i).repeats;
+
+            if((_sum + addition) % 10 != sum)
+                cIter.remove();
         }
-        try {
-            List<AlphametricChar>[] variations = new ArrayList[combinations.size()];
-            int listIndex = 0;
-            for (int[] combination : combinations) {
-                List<AlphametricChar> tmpList = aChars.stream().map(AlphametricChar::new).collect(Collectors.toList());
-                for (int i = 0; i < tmpList.size(); i++)
-                    tmpList.get(i).digitSubstitute = combination[i];
-                variations[listIndex++] = tmpList;
-            }
-            return variations;
-        }catch (NullPointerException e){
-            int a = 1;
+
+        List<AlphametricChar>[] variations = new ArrayList[combinations.size()];
+        int listIndex = 0;
+        for (int[] combination : combinations) {
+            List<AlphametricChar> tmpList = aChars.stream().map(AlphametricChar::new).collect(Collectors.toList());
+            for (int i = 0; i < tmpList.size(); i++)
+                tmpList.get(i).digitSubstitute = combination[i];
+            variations[listIndex++] = tmpList;
         }
-       return null;
+        return variations;
 
     }
     public static class AlphametricChar{
@@ -165,7 +166,7 @@ public class AlphametricSolver {
             System.out.println(puzzle);
 
             String[] words = puzzle.split("\\s*[+=]\\s*");
-            if(!puzzle.matches(".*\\W.*")){
+            if(!puzzle.matches(".*[A-Z].*")){
                 if(validateEquation(words))
                     result = puzzle;
                 return;
@@ -178,7 +179,8 @@ public class AlphametricSolver {
             String eqResult = words[words.length - 1];
             char eqChar = eqResult.charAt(eqResult.length() - rLen);
             for(int digit : Character.isDigit(eqChar) ? new int[]{Character.digit(eqChar,10)} : availableDigits){
-                List<AlphametricChar>[] aCharsLists = getSumVariations(collectFromCombinations(replaceAll(words,eqChar,digit),rLen),digit
+                String[] _words = replaceAll(words,eqChar,digit);
+                List<AlphametricChar>[] aCharsLists = getSumVariations(collectFromCombinations(_words,rLen),digit
                         ,copyExclude(availableDigits,digit),addition);
                 if (aCharsLists.length == 0) {
                     int sum = 0;
@@ -213,8 +215,8 @@ public class AlphametricSolver {
     }
 
     private static final String[][] fixedTests = {
-//            {"SEND + MORE = MONEY",                  "9567 + 1085 = 10652"},
-            {"ZEROES + ONES = BINARY",               "698392 + 3192 = 701584"},
+            {"SEND + MORE = MONEY",                  "9567 + 1085 = 10652"},
+//            {"ZEROES + ONES = BINARY",               "698392 + 3192 = 701584"},
 //            {"COUPLE + COUPLE = QUARTET",            "653924 + 653924 = 1307848"},
 //            {"DO + YOU + FEEL = LUCKY",              "57 + 870 + 9441 = 10368"},
 //            {"ELEVEN + NINE + FIVE + FIVE = THIRTY", "797275 + 5057 + 4027 + 4027 = 810386"},
