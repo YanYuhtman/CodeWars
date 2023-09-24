@@ -23,7 +23,7 @@ class `Alphametics Solver` {
         return results
     }
     fun getSumVariations(sumChars: List<Char>, sum:Int, addition: Int, from: List<Int>):List<Pair<Map<Char,Int>,Int>>{
-        val sumCharsMap = sumChars./*filter { it.isLetter() }.*/groupBy { it }.map { it.key to it.value.size }
+        val sumCharsMap = sumChars.groupBy { it }.map { it.key to it.value.size }
 
         val combinations = combinations(sumCharsMap.size,from)
 
@@ -44,7 +44,7 @@ class `Alphametics Solver` {
         val words = puzzle.split("\\s*[+=]\\s*".toRegex())
         if (words.any { it.startsWith('0') })
             return
-        if(rIndex > words.last().length) {
+        if(rIndex > words.last().length || digits.isEmpty() || !puzzle.any { it.isLetter() }) {
             if(words.sumBy { if(it === words.last()) 0 else it.toInt() } == words.last().toInt())
                 results.add(puzzle)
             return
