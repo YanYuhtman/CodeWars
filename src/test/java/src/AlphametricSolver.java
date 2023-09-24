@@ -165,6 +165,10 @@ public class AlphametricSolver {
 //            System.out.println(puzzle);
 
             String[] words = puzzle.split("\\s*[+=]\\s*");
+            for(String word : words)
+                if(word.startsWith("0"))
+                    return;
+
             if(!puzzle.matches(".*[A-Z].*")){
                 if(validateEquation(words))
                     result = puzzle;
@@ -229,7 +233,7 @@ public class AlphametricSolver {
     private static final String[][] failedTests = {
 //            {"XI + QGG = EQX", "85 + 133 = 218"},
 //            {"CLARA + DIANE = LADIES", "51434 + 98426 = 149860"},
-            {"BAT + FOOD = GUANO","865 + 9772 = 10637"},
+//            {"BAT + FOOD = GUANO","865 + 9772 = 10637"},
 //            {"OV + CSIC + SLA + TLAVS = AMCJV", "?"}
     };
 
