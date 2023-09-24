@@ -164,7 +164,7 @@ public class AlphametricSolver {
         }
 
         private void solve(String puzzle, int[] availableDigits, int rLen, int addition){
-            System.out.println(puzzle);
+//            System.out.println(puzzle);
 
             String[] words = puzzle.split("\\s*[+=]\\s*");
             if(!puzzle.matches(".*[A-Z].*")){
@@ -207,7 +207,7 @@ public class AlphametricSolver {
                         _availableDigits = copyExclude(_availableDigits,aChar.digitSubstitute);
                         sum+= aChar.digitSubstitute * aChar.repeats;
                     }
-                    solve(_puzzle,_availableDigits,rLen+1,sum/10);
+                    solve(_puzzle,_availableDigits,rLen+1,(partialSum + sum)/10);
                 }
 
             }
@@ -221,11 +221,11 @@ public class AlphametricSolver {
     }
 
     private static final String[][] fixedTests = {
-//            {"SEND + MORE = MONEY",                  "9567 + 1085 = 10652"},
-//            {"ZEROES + ONES = BINARY",               "698392 + 3192 = 701584"},
-//            {"COUPLE + COUPLE = QUARTET",            "653924 + 653924 = 1307848"},
+            {"SEND + MORE = MONEY",                  "9567 + 1085 = 10652"},
+            {"ZEROES + ONES = BINARY",               "698392 + 3192 = 701584"},
+            {"COUPLE + COUPLE = QUARTET",            "653924 + 653924 = 1307848"},
             {"DO + YOU + FEEL = LUCKY",              "57 + 870 + 9441 = 10368"},
-//            {"ELEVEN + NINE + FIVE + FIVE = THIRTY", "797275 + 5057 + 4027 + 4027 = 810386"},
+            {"ELEVEN + NINE + FIVE + FIVE = THIRTY", "797275 + 5057 + 4027 + 4027 = 810386"},
     };
 
     private void _testVariations(int expected, List<AlphametricChar>[] variations){
