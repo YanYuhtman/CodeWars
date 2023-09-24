@@ -6,9 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 //https://www.codewars.com/kata/5b5fe164b88263ad3d00250b
 public class AlphametricSolver {
 
-
-
-
     public class Alphametics {
         static List<int[]> combinationsGenerator(int size, int[] from){
             ArrayList<int[]> combinations = new ArrayList<>();
@@ -193,7 +190,7 @@ public class AlphametricSolver {
                             isFullSum = false;
                     }
                 if(isFullSum && (partialSum + addition) % 10 == digit){
-                    solve(puzzle.replace(eqChar,Character.forDigit(digit,10)), availableDigits, rLen + 1, (partialSum + addition) / 10);
+                    solve(puzzle.replace(eqChar,Character.forDigit(digit,10)), copyExclude(availableDigits,digit), rLen + 1, (partialSum + addition) / 10);
                     continue;
                 }
                 List<AlphametricChar>[] aCharsLists = getSumVariations(collectFromCombinations(_words,rLen),digit
@@ -230,8 +227,8 @@ public class AlphametricSolver {
     };
 
     private static final String[][] failedTests = {
-            {"XI + QGG = EQX", "?"},
-            {"CLARA + DIANE = LADIES", "?"},
+            {"XI + QGG = EQX", "85 + 133 = 218"},
+            {"CLARA + DIANE = LADIES", "51434 + 98426 = 149860"},
     };
 
     private void _testVariations(int expected, List<Alphametics.AlphametricChar>[] variations){
