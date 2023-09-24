@@ -180,17 +180,22 @@ public class AlphametricSolver {
             char eqChar = eqResult.charAt(eqResult.length() - rLen);
             for(int digit : Character.isDigit(eqChar) ? new int[]{Character.digit(eqChar,10)} : availableDigits){
                 String[] _words = replaceAll(words,eqChar,digit);
-                List<AlphametricChar>[] aCharsLists = getSumVariations(collectFromCombinations(_words,rLen),digit
-                        ,copyExclude(availableDigits,digit),addition);
-                if (aCharsLists.length == 0) {
-                    int sum = 0;
-                    for (int i = 0; i < words.length; i++)
-                        if (rLen <= words[i].length())
-                            sum += Character.forDigit(words[i].charAt(words[i].length() - rLen),10);
-                    sum += addition;
-                    solve(puzzle, availableDigits, rLen + 1, sum / 10);
+                int partialSum = 0;
+                boolean isFullSum = true;
+                for (int i = 0; i < _words.length - 1; i++)
+                    if (rLen <= _words[i].length()) {
+                        char ch = _words[i].charAt(_words[i].length() - rLen);
+                        if (Character.isDigit(ch))
+                            partialSum += Character.digit(ch, 10);
+                        else
+                            isFullSum = false;
+                    }
+                if(isFullSum && (partialSum + addition) % 10 == digit){
+                    solve(puzzle, availableDigits, rLen + 1, (partialSum + addition) / 10);
                     return;
                 }
+                List<AlphametricChar>[] aCharsLists = getSumVariations(collectFromCombinations(_words,rLen),digit
+                        ,copyExclude(availableDigits,digit),addition + partialSum);
 
                 for(List<AlphametricChar> aCharsList : aCharsLists){
                     String _puzzle = puzzle.replace(eqChar,Character.forDigit(digit,10));
