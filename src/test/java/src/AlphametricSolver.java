@@ -192,7 +192,7 @@ public class AlphametricSolver {
                     }
                 if(isFullSum && (partialSum + addition) % 10 == digit){
                     solve(puzzle, availableDigits, rLen + 1, (partialSum + addition) / 10);
-                    return;
+                    continue;
                 }
                 List<AlphametricChar>[] aCharsLists = getSumVariations(collectFromCombinations(_words,rLen),digit
                         ,copyExclude(availableDigits,digit),addition + partialSum);
@@ -204,7 +204,7 @@ public class AlphametricSolver {
                     for (AlphametricChar aChar : aCharsList) {
                         _puzzle = _puzzle.replace(aChar.aChar, Character.forDigit(aChar.digitSubstitute, 10));
                         _availableDigits = copyExclude(_availableDigits,aChar.digitSubstitute);
-                        sum+= aChar.digitSubstitute;
+                        sum+= aChar.digitSubstitute * aChar.repeats;
                     }
                     solve(_puzzle,_availableDigits,rLen+1,sum/10);
                 }
@@ -220,8 +220,8 @@ public class AlphametricSolver {
     }
 
     private static final String[][] fixedTests = {
-            {"SEND + MORE = MONEY",                  "9567 + 1085 = 10652"},
-//            {"ZEROES + ONES = BINARY",               "698392 + 3192 = 701584"},
+//            {"SEND + MORE = MONEY",                  "9567 + 1085 = 10652"},
+            {"ZEROES + ONES = BINARY",               "698392 + 3192 = 701584"},
 //            {"COUPLE + COUPLE = QUARTET",            "653924 + 653924 = 1307848"},
 //            {"DO + YOU + FEEL = LUCKY",              "57 + 870 + 9441 = 10368"},
 //            {"ELEVEN + NINE + FIVE + FIVE = THIRTY", "797275 + 5057 + 4027 + 4027 = 810386"},
