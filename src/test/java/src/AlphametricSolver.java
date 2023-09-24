@@ -191,7 +191,7 @@ public class AlphametricSolver {
                             isFullSum = false;
                     }
                 if(isFullSum && (partialSum + addition) % 10 == digit){
-                    solve(puzzle, availableDigits, rLen + 1, (partialSum + addition) / 10);
+                    solve(puzzle.replace(eqChar,Character.forDigit(digit,10)), availableDigits, rLen + 1, (partialSum + addition) / 10);
                     continue;
                 }
                 List<AlphametricChar>[] aCharsLists = getSumVariations(collectFromCombinations(_words,rLen),digit
