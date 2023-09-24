@@ -107,7 +107,7 @@ public class AlphametricSolver {
             }
         }
         private final String puzzle;
-        private String result = null;
+        private String result = "";
         public Alphametics(String s) {
             puzzle = s;
         }
@@ -205,7 +205,7 @@ public class AlphametricSolver {
                         _availableDigits = copyExclude(_availableDigits,aChar.digitSubstitute);
                         sum+= aChar.digitSubstitute * aChar.repeats;
                     }
-                    solve(_puzzle,_availableDigits,rLen+1,(partialSum + sum)/10);
+                    solve(_puzzle,_availableDigits,rLen+1,(partialSum + sum + addition)/10);
                 }
 
             }
@@ -227,8 +227,10 @@ public class AlphametricSolver {
     };
 
     private static final String[][] failedTests = {
-            {"XI + QGG = EQX", "85 + 133 = 218"},
-            {"CLARA + DIANE = LADIES", "51434 + 98426 = 149860"},
+//            {"XI + QGG = EQX", "85 + 133 = 218"},
+//            {"CLARA + DIANE = LADIES", "51434 + 98426 = 149860"},
+            {"BAT + FOOD = GUANO","865 + 9772 = 10637"},
+//            {"OV + CSIC + SLA + TLAVS = AMCJV", "?"}
     };
 
     private void _testVariations(int expected, List<Alphametics.AlphametricChar>[] variations){
