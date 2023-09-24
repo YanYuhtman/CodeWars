@@ -1,5 +1,4 @@
 import org.junit.jupiter.api.Test;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -10,7 +9,7 @@ public class AlphametricSolver {
 
 
 
-    public static class Alphametric {
+    public class Alphametics {
         static List<int[]> combinationsGenerator(int size, int[] from){
             ArrayList<int[]> combinations = new ArrayList<>();
             if(size == 1){
@@ -112,7 +111,7 @@ public class AlphametricSolver {
         }
         private final String puzzle;
         private String result = null;
-        public Alphametric(String s) {
+        public Alphametics(String s) {
             puzzle = s;
         }
         private boolean validateEquation(String[] words){
@@ -230,8 +229,13 @@ public class AlphametricSolver {
             {"ELEVEN + NINE + FIVE + FIVE = THIRTY", "797275 + 5057 + 4027 + 4027 = 810386"},
     };
 
-    private void _testVariations(int expected, List<Alphametric.AlphametricChar>[] variations){
-        for(List<Alphametric.AlphametricChar> l : variations){
+    private static final String[][] failedTests = {
+            {"XI + QGG = EQX", "?"},
+            {"CLARA + DIANE = LADIES", "?"},
+    };
+
+    private void _testVariations(int expected, List<Alphametics.AlphametricChar>[] variations){
+        for(List<Alphametics.AlphametricChar> l : variations){
             l.stream().forEach(System.out::print);
             System.out.println();
         }
@@ -242,14 +246,14 @@ public class AlphametricSolver {
     }
     @Test
     public void testVariations(){
-       _testVariations(1,Alphametric.getSumVariations(new char[]{'A'},1,new int[]{0,1},0));
-       _testVariations(2,Alphametric.getSumVariations(new char[]{'A','B'},1,new int[]{0,1},0));
-       _testVariations(2,Alphametric.getSumVariations(new char[]{'A','B'},1,new int[]{2,9},0));
-       _testVariations(2,Alphametric.getSumVariations(new char[]{'A','A','B'},3,new int[]{0,1,2},0));
-       _testVariations(6,Alphametric.getSumVariations(new char[]{'A','B','C'},0,new int[]{9,8,3},0));
-        _testVariations(0,Alphametric.getSumVariations(new char[]{'A','A','C'},0,new int[]{9,8,3},0));
-        _testVariations(4,Alphametric.getSumVariations(new char[]{'A','B'},1,new int[]{0,1,2,9},0));
-        _testVariations(4,Alphametric.getSumVariations(new char[]{'A','B'},2,new int[]{0,1,2,9},1));
+       _testVariations(1, Alphametics.getSumVariations(new char[]{'A'},1,new int[]{0,1},0));
+       _testVariations(2, Alphametics.getSumVariations(new char[]{'A','B'},1,new int[]{0,1},0));
+       _testVariations(2, Alphametics.getSumVariations(new char[]{'A','B'},1,new int[]{2,9},0));
+       _testVariations(2, Alphametics.getSumVariations(new char[]{'A','A','B'},3,new int[]{0,1,2},0));
+       _testVariations(6, Alphametics.getSumVariations(new char[]{'A','B','C'},0,new int[]{9,8,3},0));
+        _testVariations(0, Alphametics.getSumVariations(new char[]{'A','A','C'},0,new int[]{9,8,3},0));
+        _testVariations(4, Alphametics.getSumVariations(new char[]{'A','B'},1,new int[]{0,1,2,9},0));
+        _testVariations(4, Alphametics.getSumVariations(new char[]{'A','B'},2,new int[]{0,1,2,9},1));
     }
 
     private void _testCombinations(int expected, List<int[]> combinations){
@@ -267,17 +271,23 @@ public class AlphametricSolver {
     @Test
     public void testCombinations(){
 
-        _testCombinations(2,Alphametric.combinationsGenerator(2,new int[]{0,1}));
-        _testCombinations(6,Alphametric.combinationsGenerator(2, new int[]{0,1,2}));
-        _testCombinations(20,Alphametric.combinationsGenerator(2,  new int[]{0,1,2,3,4}));
-        _testCombinations(60,Alphametric.combinationsGenerator(3, new int[]{0,1,2,3,4}));
+        _testCombinations(2, Alphametics.combinationsGenerator(2,new int[]{0,1}));
+        _testCombinations(6, Alphametics.combinationsGenerator(2, new int[]{0,1,2}));
+        _testCombinations(20, Alphametics.combinationsGenerator(2,  new int[]{0,1,2,3,4}));
+        _testCombinations(60, Alphametics.combinationsGenerator(3, new int[]{0,1,2,3,4}));
 
+    }
+
+    @Test
+    public void FailedTests(){
+        for (String[] test: failedTests)
+            assertEquals(test[1], new Alphametics(test[0]).solve());
     }
 
     @Test
     public void FixedTests() {
         for (String[] test: fixedTests)
-            assertEquals(test[1], new Alphametric(test[0]).solve());
+            assertEquals(test[1], new Alphametics(test[0]).solve());
     }
 }
 
