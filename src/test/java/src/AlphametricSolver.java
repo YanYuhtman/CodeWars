@@ -30,84 +30,85 @@ public class AlphametricSolver {
         return combinations;
     }
 
-    public static List<AlphametricChar>[] getSumVariations(char[] chars, int sum, int[] fromDigits, int addition){
-        if(chars.length == 0)
-            return new List[0];
 
-        List<AlphametricChar> aChars = new ArrayList<>();
-        Arrays.sort(chars);
-        AlphametricChar prevChar = null;
-        for (char ch : chars) {
-            if(prevChar == null){
-                prevChar = new AlphametricChar(ch);
-            }else if (ch == prevChar.aChar) {
-                prevChar.repeats += 1;
-            }else {
+    public static class Alphametric {
+        public static List<AlphametricChar>[] getSumVariations(char[] chars, int sum, int[] fromDigits, int addition){
+            if(chars.length == 0)
+                return new List[0];
+
+            List<AlphametricChar> aChars = new ArrayList<>();
+            Arrays.sort(chars);
+            AlphametricChar prevChar = null;
+            for (char ch : chars) {
+                if(prevChar == null){
+                    prevChar = new AlphametricChar(ch);
+                }else if (ch == prevChar.aChar) {
+                    prevChar.repeats += 1;
+                }else {
+                    aChars.add(prevChar);
+                    prevChar = new AlphametricChar(ch);
+                }
+            }
+            if (aChars.size() == 0 || aChars.get(aChars.size() - 1) != prevChar)
                 aChars.add(prevChar);
-                prevChar = new AlphametricChar(ch);
+
+
+            List<int[]> combinations = combinationsGenerator(aChars.size(),fromDigits);
+            for(Iterator<int[]> cIter = combinations.iterator(); cIter.hasNext();){
+                int[] combination = cIter.next();
+                int _sum = 0;
+                for(int i = 0; i < combination.length;i++)
+                    _sum += combination[i] * aChars.get(i).repeats;
+
+                if((_sum + addition) % 10 != sum)
+                    cIter.remove();
+            }
+
+            List<AlphametricChar>[] variations = new ArrayList[combinations.size()];
+            int listIndex = 0;
+            for (int[] combination : combinations) {
+                List<AlphametricChar> tmpList = aChars.stream().map(AlphametricChar::new).collect(Collectors.toList());
+                for (int i = 0; i < tmpList.size(); i++)
+                    tmpList.get(i).digitSubstitute = combination[i];
+                variations[listIndex++] = tmpList;
+            }
+            return variations;
+
+        }
+        public static class AlphametricChar{
+            public final char aChar;
+            public int repeats = 1;
+            public int digitSubstitute = -1;
+
+            public AlphametricChar(AlphametricChar original){
+                this.aChar = original.aChar;
+                this.digitSubstitute = original.digitSubstitute;
+                this.repeats = original.repeats;
+            }
+            public AlphametricChar(char aChar) {
+                this.aChar = aChar;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+
+                AlphametricChar that = (AlphametricChar) o;
+
+                return aChar == that.aChar;
+            }
+
+            @Override
+            public int hashCode() {
+                return aChar;
+            }
+
+            @Override
+            public String toString() {
+                return "[" + aChar + "x" + repeats + "->" + digitSubstitute + "]";
             }
         }
-        if (aChars.size() == 0 || aChars.get(aChars.size() - 1) != prevChar)
-            aChars.add(prevChar);
-
-
-        List<int[]> combinations = combinationsGenerator(aChars.size(),fromDigits);
-        for(Iterator<int[]> cIter = combinations.iterator(); cIter.hasNext();){
-            int[] combination = cIter.next();
-            int _sum = 0;
-            for(int i = 0; i < combination.length;i++)
-                _sum += combination[i] * aChars.get(i).repeats;
-
-            if((_sum + addition) % 10 != sum)
-                cIter.remove();
-        }
-
-        List<AlphametricChar>[] variations = new ArrayList[combinations.size()];
-        int listIndex = 0;
-        for (int[] combination : combinations) {
-            List<AlphametricChar> tmpList = aChars.stream().map(AlphametricChar::new).collect(Collectors.toList());
-            for (int i = 0; i < tmpList.size(); i++)
-                tmpList.get(i).digitSubstitute = combination[i];
-            variations[listIndex++] = tmpList;
-        }
-        return variations;
-
-    }
-    public static class AlphametricChar{
-        public final char aChar;
-        public int repeats = 1;
-        public int digitSubstitute = -1;
-
-        public AlphametricChar(AlphametricChar original){
-            this.aChar = original.aChar;
-            this.digitSubstitute = original.digitSubstitute;
-            this.repeats = original.repeats;
-        }
-        public AlphametricChar(char aChar) {
-            this.aChar = aChar;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            AlphametricChar that = (AlphametricChar) o;
-
-            return aChar == that.aChar;
-        }
-
-        @Override
-        public int hashCode() {
-            return aChar;
-        }
-
-        @Override
-        public String toString() {
-            return "[" + aChar + "x" + repeats + "->" + digitSubstitute + "]";
-        }
-    }
-    public static class Alphametric {
         private final String puzzle;
         private String result = null;
         public Alphametric(String s) {
@@ -228,8 +229,8 @@ public class AlphametricSolver {
             {"ELEVEN + NINE + FIVE + FIVE = THIRTY", "797275 + 5057 + 4027 + 4027 = 810386"},
     };
 
-    private void _testVariations(int expected, List<AlphametricChar>[] variations){
-        for(List<AlphametricChar> l : variations){
+    private void _testVariations(int expected, List<Alphametric.AlphametricChar>[] variations){
+        for(List<Alphametric.AlphametricChar> l : variations){
             l.stream().forEach(System.out::print);
             System.out.println();
         }
@@ -240,14 +241,14 @@ public class AlphametricSolver {
     }
     @Test
     public void testVariations(){
-       _testVariations(1,getSumVariations(new char[]{'A'},1,new int[]{0,1},0));
-       _testVariations(2,getSumVariations(new char[]{'A','B'},1,new int[]{0,1},0));
-       _testVariations(2,getSumVariations(new char[]{'A','B'},1,new int[]{2,9},0));
-       _testVariations(2,getSumVariations(new char[]{'A','A','B'},3,new int[]{0,1,2},0));
-       _testVariations(6,getSumVariations(new char[]{'A','B','C'},0,new int[]{9,8,3},0));
-        _testVariations(0,getSumVariations(new char[]{'A','A','C'},0,new int[]{9,8,3},0));
-        _testVariations(4,getSumVariations(new char[]{'A','B'},1,new int[]{0,1,2,9},0));
-        _testVariations(4,getSumVariations(new char[]{'A','B'},2,new int[]{0,1,2,9},1));
+       _testVariations(1,Alphametric.getSumVariations(new char[]{'A'},1,new int[]{0,1},0));
+       _testVariations(2,Alphametric.getSumVariations(new char[]{'A','B'},1,new int[]{0,1},0));
+       _testVariations(2,Alphametric.getSumVariations(new char[]{'A','B'},1,new int[]{2,9},0));
+       _testVariations(2,Alphametric.getSumVariations(new char[]{'A','A','B'},3,new int[]{0,1,2},0));
+       _testVariations(6,Alphametric.getSumVariations(new char[]{'A','B','C'},0,new int[]{9,8,3},0));
+        _testVariations(0,Alphametric.getSumVariations(new char[]{'A','A','C'},0,new int[]{9,8,3},0));
+        _testVariations(4,Alphametric.getSumVariations(new char[]{'A','B'},1,new int[]{0,1,2,9},0));
+        _testVariations(4,Alphametric.getSumVariations(new char[]{'A','B'},2,new int[]{0,1,2,9},1));
     }
 
     private void _testCombinations(int expected, List<int[]> combinations){
