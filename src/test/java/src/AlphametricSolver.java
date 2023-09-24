@@ -7,32 +7,33 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 //https://www.codewars.com/kata/5b5fe164b88263ad3d00250b
 public class AlphametricSolver {
 
-    public static List<int[]> combinationsGenerator(int size, int[] from){
-        ArrayList<int[]> combinations = new ArrayList<>();
-        if(size == 1){
-            for(int value : from)
-                combinations.add(new int[]{value});
-            return combinations;
-        }
-        for(int value : from) {
-            int[] next = new int[from.length - 1];
-            int index = 0;
-            for(int v : from)
-                if(v != value)
-                    next[index++] = v;
-            for (int[] combination : combinationsGenerator(size - 1, next)) {
-                int[] newCombination = Arrays.copyOf(combination, combination.length + 1);
-                newCombination[newCombination.length - 1] = value;
-                combinations.add(newCombination);
 
-            }
-        }
-        return combinations;
-    }
 
 
     public static class Alphametric {
-        public static List<AlphametricChar>[] getSumVariations(char[] chars, int sum, int[] fromDigits, int addition){
+        static List<int[]> combinationsGenerator(int size, int[] from){
+            ArrayList<int[]> combinations = new ArrayList<>();
+            if(size == 1){
+                for(int value : from)
+                    combinations.add(new int[]{value});
+                return combinations;
+            }
+            for(int value : from) {
+                int[] next = new int[from.length - 1];
+                int index = 0;
+                for(int v : from)
+                    if(v != value)
+                        next[index++] = v;
+                for (int[] combination : combinationsGenerator(size - 1, next)) {
+                    int[] newCombination = Arrays.copyOf(combination, combination.length + 1);
+                    newCombination[newCombination.length - 1] = value;
+                    combinations.add(newCombination);
+
+                }
+            }
+            return combinations;
+        }
+        static List<AlphametricChar>[] getSumVariations(char[] chars, int sum, int[] fromDigits, int addition){
             if(chars.length == 0)
                 return new List[0];
 
@@ -75,7 +76,7 @@ public class AlphametricSolver {
             return variations;
 
         }
-        public static class AlphametricChar{
+        static class AlphametricChar{
             public final char aChar;
             public int repeats = 1;
             public int digitSubstitute = -1;
@@ -266,10 +267,10 @@ public class AlphametricSolver {
     @Test
     public void testCombinations(){
 
-        _testCombinations(2,combinationsGenerator(2,new int[]{0,1}));
-        _testCombinations(6,combinationsGenerator(2, new int[]{0,1,2}));
-        _testCombinations(20,combinationsGenerator(2,  new int[]{0,1,2,3,4}));
-        _testCombinations(60,combinationsGenerator(3, new int[]{0,1,2,3,4}));
+        _testCombinations(2,Alphametric.combinationsGenerator(2,new int[]{0,1}));
+        _testCombinations(6,Alphametric.combinationsGenerator(2, new int[]{0,1,2}));
+        _testCombinations(20,Alphametric.combinationsGenerator(2,  new int[]{0,1,2,3,4}));
+        _testCombinations(60,Alphametric.combinationsGenerator(3, new int[]{0,1,2,3,4}));
 
     }
 
