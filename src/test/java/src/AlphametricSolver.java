@@ -162,7 +162,9 @@ public class AlphametricSolver {
         }
 
         private void solve(String puzzle, int[] availableDigits, int rLen, int addition){
-//            System.out.println(puzzle);
+            System.out.println(puzzle);
+            if(!result.isEmpty())
+                return;
 
             String[] words = puzzle.split("\\s*[+=]\\s*");
             for(String word : words)
@@ -231,9 +233,9 @@ public class AlphametricSolver {
     };
 
     private static final String[][] failedTests = {
-//            {"XI + QGG = EQX", "85 + 133 = 218"},
-//            {"CLARA + DIANE = LADIES", "51434 + 98426 = 149860"},
-//            {"BAT + FOOD = GUANO","865 + 9772 = 10637"},
+            {"XI + QGG = EQX", "36 + 177 = 213"},
+            {"CLARA + DIANE = LADIES", "51424 + 98436 = 149860"},
+            {"BAT + FOOD = GUANO","862 + 9775 = 10637"},
 //            {"OV + CSIC + SLA + TLAVS = AMCJV", "?"}
     };
 
