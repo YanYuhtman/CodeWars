@@ -19,17 +19,22 @@ class `Tricky Kotlin 5` {
     var y = 0
     var width = 0
     var height = 0
-    inline fun box(block:()->Unit){
+    inline fun box0(block:()->Unit){
     }
     inline fun b(block:Box.()->Unit){
         block.invoke(Box(1,1,1,1))
     }
+
+    //The correct solutions
+    operator fun Box.invoke(block:Box.()->Unit) = block(this)
+
     @Test
     fun testBox() {
         val rand = Random(System.currentTimeMillis())
         val xx = rand.nextInt(100)
         val yy = rand.nextInt(100)
         val box = Box(xx, yy, xx + rand.nextInt(1000), yy + rand.nextInt(1000))
+        val box2 = Box(1,2,3,4)
         val testerBox = box.copy()
 //        println(this::box.map { "$it" }.joinToString("\n"))
         fun boxEquals(testerBox: Box, box: Box) {
