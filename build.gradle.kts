@@ -13,6 +13,7 @@ repositories {
 }
 
 dependencies {
+    implementation(kotlin("reflect"))
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
 //    testImplementation("org.testng:testng:7.1.0")
