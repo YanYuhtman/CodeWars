@@ -1,5 +1,6 @@
 import org.junit.jupiter.api.Test
 import java.util.*
+import kotlin.math.max
 import kotlin.test.assertEquals
 
 class `Esolang Interpreters #4` {
@@ -57,20 +58,21 @@ class `Esolang Interpreters #4` {
     fun interpret(code: String, input: String): String {
         var input:StringBuilder =  StringBuilder(input.toBoolfuck())
         val output = StringBuilder()
-        var iIndex = -1
-        var pValue:Array<Char> = Array(8){'0'}
-        var pIndex = 0
+        var iIndex = 0
+        var pValue:Array<Char> = Array(999){'0'}
+        var pIndex = if(input.isEmpty()) 0 else -1
         var cIndex = 0
         while (cIndex < code.length) {
-            val inBounds = iIndex >= 0 && iIndex < input.length
+            val inputInBounds = iIndex >= 0 && iIndex < input.length
+            val pIndexInbounds = pIndex >= 0 && pIndex < pValue.size
             when (code[cIndex++]) {
-                ',' -> pValue[pIndex] = (if (inBounds) input[iIndex] else '0')
-                '+' -> pValue[pIndex] = if(pValue[pIndex] == '0') '1' else '0'
-                ';' -> output.append(pValue[pIndex])
-                '>' -> {iIndex++; pIndex = (pIndex + 1).mod(8)}
-                '<' -> {iIndex--; pIndex = (pIndex - 1).mod(8)}
+                ',' -> pValue[pIndex] = (if (inputInBounds) input[iIndex++] else '0')
+                '+' -> if(pIndexInbounds) pValue[pIndex] = if(pValue[pIndex] == '0') '1' else '0'
+                ';' -> if(pIndexInbounds) output.append(pValue[pIndex])
+                '>' -> pIndex += 1
+                '<' -> pIndex -= 1
                 '[' -> {
-                    if (pValue[pIndex] == '0') {
+                    if (!pIndexInbounds || pValue[pIndex] == '0') {
                         val stack = Stack<Char>()
                         while (cIndex + 1 < code.length) {
                             val command = code[++cIndex]
@@ -82,8 +84,9 @@ class `Esolang Interpreters #4` {
                 }
 
                 ']' -> {
-                    if (pValue[pIndex] == '1') {
+                    if (pIndexInbounds && pValue[pIndex] == '1') {
                         val stack = Stack<Char>()
+                        cIndex -= 1
                         while (cIndex > 0) {
                             val command = code[--cIndex]
                             if (command == '[') {
@@ -106,6 +109,7 @@ class `Esolang Interpreters #4` {
         assertEquals("aa", "1000011010000110".fromBoolfuck())
         assertEquals("a", "1000011".fromBoolfuck())
         assertEquals("H","00010010".fromBoolfuck())
+        assertEquals("11000010","C".toBoolfuck())
 
     }
 
@@ -126,7 +130,22 @@ class `Esolang Interpreters #4` {
 
     @Test
     fun testIO() {
-                assertEquals(interpret(codeToBoolfuck(",."), "*"), "*")
+        assertEquals("*]",interpret(codeToBoolfuck(",.,."), "*]"))
+        assertEquals("2",interpret(codeToBoolfuck(",+."),"1"))
+        assertEquals("3",interpret(codeToBoolfuck(",+."),"2"))
+        assertEquals("4",interpret(codeToBoolfuck(",+."),"3"))
+
+        assertEquals("\u0000",interpret(codeToBoolfuck(",+."),"${"11111111".toInt(2).toChar()}"))
+        assertEquals("\u00FF",interpret(codeToBoolfuck(",+."),"${"11111110".toInt(2).toChar()}"))
+
+        assertEquals("2",interpret(codeToBoolfuck(",-."),"3"))
+
+    }
+
+    @Test
+    fun testRevert(){
+        val boolFuckCode = codeToBoolfuck(",[>,]<[.<]")
+        assertEquals("]*",interpret(boolFuckCode, "*]"))
     }
 
     @Test
@@ -138,9 +157,9 @@ class `Esolang Interpreters #4` {
 
     @Test
     fun testBasic() {
-
+//        assertEquals(interpret(">,>,>,>,>,>,>,>,<<<<<<<;>;>;>;>;>;>;>;","C"),"C")
         assertEquals(interpret(">,>,>,>,>,>,>,>,<<<<<<<[>]+<[+<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]<<<<<<<<;>;>;>;>;>;>;>;<<<<<<<,>,>,>,>,>,>,>,<<<<<<<[>]+<[+<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]", "Codewars\u00ff"), "Codewars")
-//        assertEquals(interpret(">,>,>,>,>,>,>,>,>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>;>;>;>;>;>;>;>;>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]>,>,>,>,>,>,>,>,>+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]", "Codewars"), "Codewars")
-//        assertEquals(interpret(">,>,>,>,>,>,>,>,>>,>,>,>,>,>,>,>,<<<<<<<<+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]>[>]+<[+<]>>>>>>>>>[+]>[>]+<[+<]>>>>>>>>>[+]<<<<<<<<<<<<<<<<<<+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]>>>>>>>>>>>>>>>>>>>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]<<<<<<<<<<<<<<<<<<<<<<<<<<[>]+<[+<]>>>>>>>>>[+]>>>>>>>>>>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]<<<<<<<<<<<<<<<<<<+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]>>>>>>>>>>>>>>>>>>>;>;>;>;>;>;>;>;<<<<<<<<", "\u0008\u0009"), "\u0048")
+        assertEquals(interpret(">,>,>,>,>,>,>,>,>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>;>;>;>;>;>;>;>;>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]>,>,>,>,>,>,>,>,>+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]", "Codewars"), "Codewars")
+        assertEquals(interpret(">,>,>,>,>,>,>,>,>>,>,>,>,>,>,>,>,<<<<<<<<+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]>[>]+<[+<]>>>>>>>>>[+]>[>]+<[+<]>>>>>>>>>[+]<<<<<<<<<<<<<<<<<<+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]>>>>>>>>>>>>>>>>>>>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]<<<<<<<<<<<<<<<<<<<<<<<<<<[>]+<[+<]>>>>>>>>>[+]>>>>>>>>>>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]<<<<<<<<<<<<<<<<<<+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]>>>>>>>>>>>>>>>>>>>;>;>;>;>;>;>;>;<<<<<<<<", "\u0008\u0009"), "\u0048")
     }
 }
