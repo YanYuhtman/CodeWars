@@ -1,6 +1,5 @@
 import org.junit.jupiter.api.Test
 import java.util.*
-import kotlin.math.max
 import kotlin.test.assertEquals
 
 class `Esolang Interpreters #4` {
@@ -52,15 +51,12 @@ class `Esolang Interpreters #4` {
         return sb.toString()
     }
 
-
-
-
     fun interpret(code: String, input: String): String {
         var input:StringBuilder =  StringBuilder(input.toBoolfuck())
         val output = StringBuilder()
         var iIndex = 0
         var pValue:Array<Char> = Array(999){'0'}
-        var pIndex = if(input.isEmpty()) 0 else -1
+        var pIndex = 999/2
         var cIndex = 0
         while (cIndex < code.length) {
             val inputInBounds = iIndex >= 0 && iIndex < input.length
