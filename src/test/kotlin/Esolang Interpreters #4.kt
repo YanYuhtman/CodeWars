@@ -55,23 +55,22 @@ class `Esolang Interpreters #4` {
 
 
     fun interpret(code: String, input: String): String {
-//        if(input == "")
-//            return ""
         var input:StringBuilder =  StringBuilder(input.toBoolfuck())
         val output = StringBuilder()
-        var pIndex = -1
-        var pValue:Char = '0'
+        var iIndex = -1
+        var pValue:Array<Char> = Array(8){'0'}
+        var pIndex = 0
         var cIndex = 0
         while (cIndex < code.length) {
-            val inBounds = pIndex >= 0 && pIndex < input.length
+            val inBounds = iIndex >= 0 && iIndex < input.length
             when (code[cIndex++]) {
-                ',' -> pValue = if (inBounds) input[pIndex] else '0'
-                '+' -> /*if(inBounds) {input[pIndex] = if (input[pIndex] == '0') '1' else '0'} else*/ {pValue = if(pValue == '0') '1' else '0'}
-                ';' -> output.append(if (inBounds) input[pIndex] else pValue)
-                '>' -> pIndex++
-                '<' -> pIndex--
+                ',' -> pValue[pIndex] = (if (inBounds) input[iIndex] else '0')
+                '+' -> pValue[pIndex] = if(pValue[pIndex] == '0') '1' else '0'
+                ';' -> output.append(pValue[pIndex])
+                '>' -> {iIndex++; pIndex = (pIndex + 1).mod(8)}
+                '<' -> {iIndex--; pIndex = (pIndex - 1).mod(8)}
                 '[' -> {
-                    if (pValue == '0'/*inBounds && input[pIndex] == '0'*/) {
+                    if (pValue[pIndex] == '0') {
                         val stack = Stack<Char>()
                         while (cIndex + 1 < code.length) {
                             val command = code[++cIndex]
@@ -83,7 +82,7 @@ class `Esolang Interpreters #4` {
                 }
 
                 ']' -> {
-                    if (pValue == '1'/*inBounds && input[pIndex] == '1'*/) {
+                    if (pValue[pIndex] == '1') {
                         val stack = Stack<Char>()
                         while (cIndex > 0) {
                             val command = code[--cIndex]
@@ -100,13 +99,13 @@ class `Esolang Interpreters #4` {
 
     @Test
     fun testInputConverter(){
-//        assertEquals("\u0000","".toBoolfuck().fromBoolfuck())
         assertEquals("","".fromBoolfuck())
         assertEquals("10000110", "a".toBoolfuck())
         assertEquals("1000011010000110", "aa".toBoolfuck())
         assertEquals("a", "10000110".fromBoolfuck())
         assertEquals("aa", "1000011010000110".fromBoolfuck())
         assertEquals("a", "1000011".fromBoolfuck())
+        assertEquals("H","00010010".fromBoolfuck())
 
     }
 
@@ -132,13 +131,15 @@ class `Esolang Interpreters #4` {
 
     @Test
     fun testHelloWorld() {
+                                   // "0001"
+        assertEquals(interpret(";;;+;+;;+;+;",""),"H")
         assertEquals(interpret(";;;+;+;;+;+;+;+;+;+;;+;;+;;;+;;+;+;;+;;;+;;+;+;;+;+;;;;+;+;;+;;;+;;+;+;+;;;;;;;+;+;;+;;;+;+;;;+;+;;;;+;+;;+;;+;+;;+;;;+;;;+;;+;+;;+;;;+;+;;+;;+;+;+;;;;+;+;;;+;+;+;", ""), "Hello, world!\n")
     }
 
     @Test
     fun testBasic() {
-        assertEquals(interpret(">;>;>;>;>;>;>;>;","C"),"C")
-//        assertEquals(interpret(">,>,>,>,>,>,>,>,<<<<<<<[>]+<[+<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]<<<<<<<<;>;>;>;>;>;>;>;<<<<<<<,>,>,>,>,>,>,>,<<<<<<<[>]+<[+<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]", "Codewars\u00ff"), "Codewars")
+
+        assertEquals(interpret(">,>,>,>,>,>,>,>,<<<<<<<[>]+<[+<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]<<<<<<<<;>;>;>;>;>;>;>;<<<<<<<,>,>,>,>,>,>,>,<<<<<<<[>]+<[+<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]", "Codewars\u00ff"), "Codewars")
 //        assertEquals(interpret(">,>,>,>,>,>,>,>,>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>;>;>;>;>;>;>;>;>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]>,>,>,>,>,>,>,>,>+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]", "Codewars"), "Codewars")
 //        assertEquals(interpret(">,>,>,>,>,>,>,>,>>,>,>,>,>,>,>,>,<<<<<<<<+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]>[>]+<[+<]>>>>>>>>>[+]>[>]+<[+<]>>>>>>>>>[+]<<<<<<<<<<<<<<<<<<+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]>>>>>>>>>>>>>>>>>>>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+<<<<<<<<[>]+<[+<]>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]<<<<<<<<<<<<<<<<<<<<<<<<<<[>]+<[+<]>>>>>>>>>[+]>>>>>>>>>>>>>>>>>>+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]<<<<<<<<<<<<<<<<<<+<<<<<<<<+[>+]<[<]>>>>>>>>>[+]+<<<<<<<<+[>+]<[<]>>>>>>>>>]<[+<]>>>>>>>>>>>>>>>>>>>;>;>;>;>;>;>;>;<<<<<<<<", "\u0008\u0009"), "\u0048")
     }
