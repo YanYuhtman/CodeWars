@@ -55,20 +55,19 @@ class `Esolang Interpreters #4` {
         var input:StringBuilder =  StringBuilder(input.toBoolfuck())
         val output = StringBuilder()
         var iIndex = 0
-        var pValue:Array<Char> = Array(999){'0'}
-        var pIndex = 999/2
+        var pValue:Array<Char> = Array(10000){'0'}
+        var pIndex = pValue.size/2
         var cIndex = 0
         while (cIndex < code.length) {
             val inputInBounds = iIndex >= 0 && iIndex < input.length
-            val pIndexInbounds = pIndex >= 0 && pIndex < pValue.size
             when (code[cIndex++]) {
                 ',' -> pValue[pIndex] = (if (inputInBounds) input[iIndex++] else '0')
-                '+' -> if(pIndexInbounds) pValue[pIndex] = if(pValue[pIndex] == '0') '1' else '0'
-                ';' -> if(pIndexInbounds) output.append(pValue[pIndex])
+                '+' -> pValue[pIndex] = if(pValue[pIndex] == '0') '1' else '0'
+                ';' -> output.append(pValue[pIndex])
                 '>' -> pIndex += 1
                 '<' -> pIndex -= 1
                 '[' -> {
-                    if (!pIndexInbounds || pValue[pIndex] == '0') {
+                    if (pValue[pIndex] == '0') {
                         val stack = Stack<Char>()
                         while (cIndex + 1 < code.length) {
                             val command = code[++cIndex]
@@ -80,7 +79,7 @@ class `Esolang Interpreters #4` {
                 }
 
                 ']' -> {
-                    if (pIndexInbounds && pValue[pIndex] == '1') {
+                    if (pValue[pIndex] == '1') {
                         val stack = Stack<Char>()
                         cIndex -= 1
                         while (cIndex > 0) {
