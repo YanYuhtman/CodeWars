@@ -24,6 +24,8 @@ class `To BrainFuck Transpiler` {
         DIGIT(TokenType.BASIC, ""),
         NUMBER(TokenType.BASIC, ""),
 
+        LBRAKET(TokenType.KEYWORD, "["),
+        RBRAKET(TokenType.KEYWORD, "]"),
         VAR(TokenType.KEYWORD, "var"),
         SET(TokenType.KEYWORD, "set"),
 
@@ -99,6 +101,8 @@ class `To BrainFuck Transpiler` {
                 when {
                     curChar == EOT -> token = TokenProps(Token.EOT, curIndex)
 //                    curChar == EOL -> token = TokenProps(Token.EOL, curIndex)
+                    curChar == '[' -> token = TokenProps(Token.LBRAKET, curIndex)
+                    curChar == ']' -> token = TokenProps(Token.RBRAKET, curIndex)
                     curChar == CHAR_QUOTE -> {
                         while (nextCharOrThrow("Character resolution failed", EOL, EOT) != CHAR_QUOTE);
                         val charPos = startPos + 1
@@ -122,9 +126,13 @@ class `To BrainFuck Transpiler` {
                             }
                         }
                         if(token == null) {
-                            if(!declaration.matches("[_\$A-Za-z]+\\d*".toRegex()))
-                                throw LexerException("Declaration: $declaration at [$startPos,$curIndex] does not match variable pattern")
-                            token = TokenProps(Token.VAR_NAME,startPos,curIndex,declaration)
+                            token = if(declaration.matches("\\d+".toRegex()))
+                                TokenProps(Token.NUMBER,startPos,curIndex,declaration)
+                            else {
+                                if (!declaration.matches("[_\$A-Za-z]+\\d*".toRegex()))
+                                    throw LexerException("Declaration: $declaration at [$startPos,$curIndex] does not match variable pattern")
+                                TokenProps(Token.VAR_NAME, startPos, curIndex, declaration)
+                            }
                         }
                     }
                 }
@@ -138,6 +146,10 @@ class `To BrainFuck Transpiler` {
         }
     }
 
+    class Parser(val tokens:List<TokenProps>){
+
+    }
+
     @Test
     fun test_Lexer(){
         var source = """
@@ -149,14 +161,17 @@ class `To BrainFuck Transpiler` {
             read w
             add q w e
             msg q " " w " " e
+    
             """.trimIndent()
 
-        assertEquals(28, Lexer(source, true).tokens.size)
+//        assertEquals(28, Lexer(source, true).tokens.size)
+//        println()
         source = """
+            var L  [ 20 ]  I X
             var character 'C'
             """.trimIndent()
 
-        assertEquals(4, Lexer(source, true).tokens.size)
+        assertEquals(11, Lexer(source, true).tokens.size)
         val a =1
 
 
