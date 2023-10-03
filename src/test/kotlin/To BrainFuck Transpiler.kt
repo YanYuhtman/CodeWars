@@ -5,7 +5,7 @@ const val EOT = '\u0004'
 const val EOL = '\u000A'
 const val CHAR_QUOTE = '\''
 const val STRING_QUOTE = '\"'
-val WHITESPACE_CHARS = charArrayOf(' ','\t','\r', EOL)
+val WHITESPACE_CHARS = charArrayOf(' ','\t','\r')
 class `To BrainFuck Transpiler` {
     //https://www.codewars.com/kata/59f9cad032b8b91e12000035
 
@@ -17,15 +17,16 @@ class `To BrainFuck Transpiler` {
     }
     enum class Token(val type:TokenType, val token:String){
         EOT(TokenType.BASIC, "$EOT"),
-//        EOL(TokenType.BASIC, "$EOL"),
+        EOL(TokenType.BASIC, "$EOL"),
         VAR_NAME(TokenType.ID, ""),
         STRING(TokenType.BASIC, ""),
         CHARACTER(TokenType.BASIC, ""),
-        DIGIT(TokenType.BASIC, ""),
+//        DIGIT(TokenType.BASIC, ""),
         NUMBER(TokenType.BASIC, ""),
 
         LBRAKET(TokenType.KEYWORD, "["),
         RBRAKET(TokenType.KEYWORD, "]"),
+        COMMA(TokenType.KEYWORD, ","),
         VAR(TokenType.KEYWORD, "var"),
         SET(TokenType.KEYWORD, "set"),
 
@@ -100,16 +101,17 @@ class `To BrainFuck Transpiler` {
             while (token == null) {
                 when {
                     curChar == EOT -> token = TokenProps(Token.EOT, curIndex)
-//                    curChar == EOL -> token = TokenProps(Token.EOL, curIndex)
+                    curChar == EOL -> token = TokenProps(Token.EOL, curIndex)
                     curChar == '[' -> token = TokenProps(Token.LBRAKET, curIndex)
                     curChar == ']' -> token = TokenProps(Token.RBRAKET, curIndex)
+                    curChar == ',' -> token = TokenProps(Token.COMMA, curIndex)
                     curChar == CHAR_QUOTE -> {
                         while (nextCharOrThrow("Character resolution failed", EOL, EOT) != CHAR_QUOTE);
                         val charPos = startPos + 1
                         val ch = source.subSequence(charPos, curIndex)
                         if (ch.length != 1)
                             throw LexerException("Character $ch at $charPos is invalid")
-                        token = TokenProps(if (ch[0].isDigit()) Token.DIGIT else Token.CHARACTER, charPos, id=source.substring(charPos,curIndex))
+                        token = TokenProps(Token.CHARACTER, charPos, id=source.substring(charPos,curIndex))
 
                     }
 
@@ -117,21 +119,22 @@ class `To BrainFuck Transpiler` {
                         while (nextCharOrThrow("String resolution failed", EOL, EOT) != STRING_QUOTE);
                         token = TokenProps(Token.STRING, startPos + 1, curIndex, source.substring(startPos+1,curIndex))
                     }
-                    curChar in WHITESPACE_CHARS -> {
-                        val declaration = source.substring(startPos,curIndex)
+                    peek() in (WHITESPACE_CHARS + EOL) -> {
+                        val endPos = curIndex + 1
+                        val declaration = source.substring(startPos,endPos)
                         Token.values().forEach {
                             if(it.token == declaration) {
-                                token = TokenProps(it,startPos,curIndex)
+                                token = TokenProps(it,startPos,endPos)
                                 return@forEach
                             }
                         }
                         if(token == null) {
-                            token = if(declaration.matches("\\d+".toRegex()))
+                            token = if(declaration.matches("-?\\d+".toRegex()))
                                 TokenProps(Token.NUMBER,startPos,curIndex,declaration)
                             else {
                                 if (!declaration.matches("[_\$A-Za-z]+\\d*".toRegex()))
-                                    throw LexerException("Declaration: $declaration at [$startPos,$curIndex] does not match variable pattern")
-                                TokenProps(Token.VAR_NAME, startPos, curIndex, declaration)
+                                    throw LexerException("Declaration: $declaration at [$startPos,$endPos] does not match variable pattern")
+                                TokenProps(Token.VAR_NAME, startPos, endPos, declaration)
                             }
                         }
                     }
@@ -153,7 +156,8 @@ class `To BrainFuck Transpiler` {
     @Test
     fun test_Lexer(){
         var source = """
-            var character 'C'
+            var num -222
+             var num 222
             var digit '0'
             var string "String string string"
             var q w e
@@ -167,11 +171,11 @@ class `To BrainFuck Transpiler` {
 //        assertEquals(28, Lexer(source, true).tokens.size)
 //        println()
         source = """
-            var L  [ 20 ]  I X
+            var L  [ 20, 21 ]  I X
             var character 'C'
             """.trimIndent()
 
-        assertEquals(11, Lexer(source, true).tokens.size)
+        assertEquals(13, Lexer(source, true).tokens.size)
         val a =1
 
 
