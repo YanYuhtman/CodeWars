@@ -1,22 +1,24 @@
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 
 const val EOT = '\u0004'
 const val EOL = '\u000A'
 const val CHAR_QUOTE = '\''
 const val STRING_QUOTE = '\"'
+val WHITESPACE_CHARS = charArrayOf(' ','\t','\r', EOL)
 class `To BrainFuck Transpiler` {
     //https://www.codewars.com/kata/59f9cad032b8b91e12000035
 
     enum class TokenType{
         BASIC,
+        ID,
         KEYWORD,
         OPERATOR,
     }
     enum class Token(val type:TokenType, val token:String){
-        BLANK(TokenType.BASIC,""),
-        EOT(TokenType.BASIC, ""),
-        EOL(TokenType.BASIC, ""),
-        VARIABLE(TokenType.BASIC, ""),
+        EOT(TokenType.BASIC, "$EOT"),
+//        EOL(TokenType.BASIC, "$EOL"),
+        VAR_NAME(TokenType.ID, ""),
         STRING(TokenType.BASIC, ""),
         CHARACTER(TokenType.BASIC, ""),
         DIGIT(TokenType.BASIC, ""),
@@ -27,6 +29,7 @@ class `To BrainFuck Transpiler` {
 
         INC(TokenType.OPERATOR, "inc"),
         DEC(TokenType.OPERATOR, "dec"),
+        ADD(TokenType.OPERATOR, "add"),
         SUB(TokenType.OPERATOR, "sub"),
         MUL(TokenType.OPERATOR, "mul"),
         DIV(TokenType.OPERATOR, "div"),
@@ -53,9 +56,9 @@ class `To BrainFuck Transpiler` {
         REM(TokenType.KEYWORD, "rem"),
     }
 
-    data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos){}
+    data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, val id:String = token.token){}
     class LexerException(message:String):Exception(message)
-    class Lexer(private val source:String){
+    class Lexer(private val source:String, val debug:Boolean = false){
 
         private var curIndex = -1
         private var curChar:Char = EOT
@@ -68,8 +71,15 @@ class `To BrainFuck Transpiler` {
             while (getToken().token != Token.EOT);
         }
 
-        private fun isWhiteSpace(char:Char) = char == ' ' || char == '\t' || char == '\r'
+        private fun isWhiteSpace(char:Char) = WHITESPACE_CHARS.any{it == char}
         private fun nextChar() = let { curChar = if(++curIndex >= source.length) EOT else source[curIndex];curChar}
+        private fun nextWhiteSpace():Int{
+            curIndex = source.indexOfAny(WHITESPACE_CHARS,curIndex)
+            if(curIndex == -1)
+                curIndex = source.length
+            curChar = source.elementAt(curIndex);
+            return curIndex
+        }
 
         private fun nextCharOrThrow(message: String = "",vararg chars:Char) = let { if(nextChar() in chars) throw LexerException("$message\nCharacter '$curChar'on position: $curIndex is invalid");curChar }
 
@@ -79,61 +89,74 @@ class `To BrainFuck Transpiler` {
 
         private fun skipComment() = run {if(curChar == '/' && peek() == '/' || curChar == '-' && peek() == '-' || curChar == '#') while (nextChar() != EOL && curChar != EOT);}
 
+        private fun skipCommentsAndWhiteSpaces(){skipWhiteSpaces();skipComment();skipWhiteSpaces()}
+
         private fun getToken():TokenProps{
             var token:TokenProps? = null
+            skipCommentsAndWhiteSpaces()
+            var startPos = curIndex
             while (token == null) {
-                skipWhiteSpaces()
-                skipComment()
-                var startPos = curIndex
-
-                when (curChar) {
-                    EOT -> token = TokenProps(Token.EOT, curIndex)
-                    EOL -> token = TokenProps(Token.EOL, curIndex)
-                    CHAR_QUOTE -> {
+                when {
+                    curChar == EOT -> token = TokenProps(Token.EOT, curIndex)
+//                    curChar == EOL -> token = TokenProps(Token.EOL, curIndex)
+                    curChar == CHAR_QUOTE -> {
                         while (nextCharOrThrow("Character resolution failed", EOL, EOT) != CHAR_QUOTE);
                         val charPos = startPos + 1
                         val ch = source.subSequence(charPos, curIndex)
                         if (ch.length != 1)
                             throw LexerException("Character $ch at $charPos is invalid")
-                        token = TokenProps(if (ch[0].isDigit()) Token.DIGIT else Token.CHARACTER, charPos)
+                        token = TokenProps(if (ch[0].isDigit()) Token.DIGIT else Token.CHARACTER, charPos, id=source.substring(charPos,curIndex))
 
                     }
 
-                    STRING_QUOTE -> {
+                    curChar == STRING_QUOTE -> {
                         while (nextCharOrThrow("String resolution failed", EOL, EOT) != STRING_QUOTE);
-                        token = TokenProps(Token.STRING, startPos + 1, curIndex)
+                        token = TokenProps(Token.STRING, startPos + 1, curIndex, source.substring(startPos+1,curIndex))
                     }
-
-                    else -> {
-
+                    curChar in WHITESPACE_CHARS -> {
+                        val declaration = source.substring(startPos,curIndex)
+                        Token.values().forEach {
+                            if(it.token == declaration) {
+                                token = TokenProps(it,startPos,curIndex)
+                                return@forEach
+                            }
+                        }
+                        if(token == null) {
+                            if(!declaration.matches("[_\$A-Za-z]+\\d*".toRegex()))
+                                throw LexerException("Declaration: $declaration at [$startPos,$curIndex] does not match variable pattern")
+                            token = TokenProps(Token.VAR_NAME,startPos,curIndex,declaration)
+                        }
                     }
                 }
                 nextChar()
             }
+            if (debug)
+                println(token)
 
-            println(token)
-            return token
+            resolvedTokens.add(token!!)
+            return token!!
         }
     }
 
     @Test
     fun test_Lexer(){
         var source = """
-            var character = 'C'
-            var digit = '0'
-            car string = "String string string"
-            var q w e\n
-            read q\n
-            read w\n
-            add q w e\n
-            msg q " " w " " e\n
+            var character 'C'
+            var digit '0'
+            var string "String string string"
+            var q w e
+            read q
+            read w
+            add q w e
+            msg q " " w " " e
             """.trimIndent()
 
-        var source1 = """
-            var character = 'C'
+        assertEquals(28, Lexer(source, true).tokens.size)
+        source = """
+            var character 'C'
             """.trimIndent()
 
-       Lexer(source1).tokens//.map(::println)
+        assertEquals(4, Lexer(source, true).tokens.size)
         val a =1
 
 
