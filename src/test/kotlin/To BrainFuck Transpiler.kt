@@ -1,4 +1,8 @@
 import org.junit.jupiter.api.Test
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.sqrt
 import kotlin.test.assertEquals
 
 const val EOT = '\u0004'
@@ -15,7 +19,7 @@ class `To BrainFuck Transpiler` {
         KEYWORD,
         OPERATOR,
     }
-    enum class Token(val type:TokenType, val token:String){
+    enum class Token(val type:TokenType, val id:String){
         EOT(TokenType.BASIC, "$EOT"),
         EOL(TokenType.BASIC, "$EOL"),
         VAR_NAME(TokenType.ID, ""),
@@ -59,7 +63,7 @@ class `To BrainFuck Transpiler` {
         REM(TokenType.KEYWORD, "rem"),
     }
 
-    data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, val id:String = token.token){}
+    data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, val id:String = token.id){}
     class LexerException(message:String):Exception(message)
     class Lexer(private val source:String, val debug:Boolean = false){
 
@@ -123,7 +127,7 @@ class `To BrainFuck Transpiler` {
                         val endPos = curIndex + 1
                         val declaration = source.substring(startPos,endPos)
                         Token.values().forEach {
-                            if(it.token.equals(declaration,true)) {
+                            if(it.id.equals(declaration,true)) {
                                 token = TokenProps(it,startPos,endPos)
                                 return@forEach
                             }
@@ -155,27 +159,126 @@ class `To BrainFuck Transpiler` {
         private var currentTokenIndex:Int = -1
         private lateinit var currentToken:TokenProps
 
+        val interpreter = Interpreter()
+
         init {
             if(lexer.tokens.isEmpty() || lexer.tokens.last().token != Token.EOT)
                 throw ParserException("There is no tokens for parsing")
-            nextToken()
+            nextSignificantToken()
+            program()
         }
 
         private fun nextToken():TokenProps = let{currentToken = lexer.tokens[++currentTokenIndex];currentToken}
+        private fun nextSignificantToken() = run { while (nextToken().token == Token.EOL);}
+
+        private fun isEndOfStatement(token:Token = currentToken.token) = token == Token.EOL || token == Token.EOT
         private fun peekToken():TokenProps = lexer.tokens[currentTokenIndex + 1]
 
         private fun program(){
             while (currentToken.token != Token.EOT)
                 statement()
+
         }
         private fun statement(){
+            if(currentToken.token.type != TokenType.KEYWORD && currentToken.token != Token.EOL)
+                throw ParserException("Token type misplaced: $currentToken")
+
+            when(currentToken.token){
+                Token.VAR -> variableDeclaration()
+                Token.READ -> ioRead()
+                Token.MSG -> ioWrite()
+                else -> {}//throw  ParserException("Misplaced token: $currentToken")
+            }
+            nextSignificantToken()
 
         }
+        private fun variableDeclaration(){
+            while (!isEndOfStatement(nextToken().token)){
+                if(currentToken.token != Token.VAR_NAME)
+                    throw ParserException("Declaration variable name expected instead of: $currentToken")
+                val id = currentToken.id
+                if(peekToken().token == Token.LBRAKET){
+                    nextToken();nextToken()
+                    val size = currentToken.id.toIntOrNull()
+                    if(size == null || size < 0)
+                        throw ParserException("Positive number is expected $currentToken")
+                    interpreter.mapVariable(id,size)
 
+                }else
+                    interpreter.mapVariable(id,1)
+            }
+        }
+        private fun ioRead(){
+            if(nextToken().token != Token.VAR_NAME)
+                 throw ParserException("Variable name expected: $currentToken")
+            interpreter.ioRead(currentToken.id)
 
+        }
+        private fun ioWrite(){
+            while (!isEndOfStatement(nextToken().token)) {
+                    when {
+                        currentToken.token == Token.STRING -> interpreter.ioWriteString(currentToken.id)
+                        currentToken.token == Token.CHARACTER -> interpreter.ioWriteString("$currentToken.id")
+                        currentToken.token == Token.VAR_NAME -> interpreter.ioWriteVariable(currentToken.id)
+                    }
+                }
+        }
 
+    }
+    class InterpreterException(message:String):Exception(message)
+    class Interpreter(){
+        private val memoryMap:MutableMap<String,Int> = mutableMapOf()
+        private var freeMemPointer = 0
+        private var currentMemPointer = 0
+        private val output:StringBuilder = StringBuilder()
 
+        private fun moveToPointer(pointer:Int){
+            val (addition,symbol) = if(pointer >= currentMemPointer) (1 to '>') else (-1 to '<')
+            while (currentMemPointer != pointer) {
+                currentMemPointer += addition
+                output.append(symbol)
+            }
+        }
+        fun mapVariable(id:String, size:Int):Int{
+            memoryMap.put(id,freeMemPointer)
+            freeMemPointer += size
+            return freeMemPointer - size
+        }
+        fun ioRead(id:String){
+            moveToPointer(memoryMap[id] ?: throw InterpreterException("Variable id: $id is not mapped in memory"))
+            output.append(",")
+        }
+        fun ioWriteString(str:String){
+            moveToPointer(mapVariable("#$str",2))
+            generateOutputFor(str)
+        }
+        private fun generateOutputFor(str:String){
+            var currentMemCelValue = 0
+            str.forEach {
+                if(currentMemCelValue == it.code)
+                    output.append(".")
+                else {
+                    val (sign, symbol) = if (it.code >= currentMemCelValue) (1 to '+') else (-1 to '-')
+                    val delta = abs(it.code - currentMemCelValue)
+                    if(delta > 4) {
+                        val mult = floor(sqrt(abs(delta).toDouble())).toInt()
+                        val reminder = if (mult == 0) delta else delta % (mult * mult)
+                        output.append('>').append(CharArray(mult) { '+' }).append("[<")
+                            .append(CharArray(mult) { symbol }).append(">-]<")
+                            .append(CharArray(reminder) { symbol })
+                    }else
+                        output.append(CharArray(delta) { symbol })
+                    output.append('.')
+                    currentMemCelValue = it.code
+                }
+            }
+        }
+        fun ioWriteVariable(id:String){
+            moveToPointer(memoryMap[id] ?: throw InterpreterException("Variable id: $id is not mapped in memory"))
+            output.append(".")
+        }
 
+        override fun toString() = output.toString()
     }
 
     @Test
@@ -211,6 +314,21 @@ class `To BrainFuck Transpiler` {
             """.trimIndent()
         assertEquals(13, Lexer(source, true).tokens.size)
 
+
+    }
+    @Test
+    fun parserTest(){
+
+        val source = """
+		var X//This is a comment
+		read X--This is also a comment
+		msg "BByeeg" X#No doubt it is a comment
+		rem &&Some comment~!@#$":<
+		""".trimIndent()
+        //,"?","Bye?")
+
+        val result = Parser(Lexer(source)).interpreter.toString()
+        val a = 1
 
     }
 
