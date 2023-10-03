@@ -90,7 +90,7 @@ class `To BrainFuck Transpiler` {
 
         private fun skipWhiteSpaces() = run { while (isWhiteSpace(curChar)) nextChar() }
 
-        private fun skipComment() = run {if(curChar == '/' && peek() == '/' || curChar == '-' && peek() == '-' || curChar == '#') while (nextChar() != EOL && curChar != EOT);}
+        private fun skipComment() = run {if(curChar == '/' && peek() == '/' || curChar == '-' && peek() == '-' || curChar == '#' || source.substring(curIndex).startsWith("rem")) while (nextChar() != EOL && curChar != EOT);}
 
         private fun skipCommentsAndWhiteSpaces(){skipWhiteSpaces();skipComment();skipWhiteSpaces()}
 
@@ -119,11 +119,11 @@ class `To BrainFuck Transpiler` {
                         while (nextCharOrThrow("String resolution failed", EOL, EOT) != STRING_QUOTE);
                         token = TokenProps(Token.STRING, startPos + 1, curIndex, source.substring(startPos+1,curIndex))
                     }
-                    peek() in (WHITESPACE_CHARS + EOL) -> {
+                    peek() in (WHITESPACE_CHARS + EOL + '/' + '-' + '#')-> {
                         val endPos = curIndex + 1
                         val declaration = source.substring(startPos,endPos)
                         Token.values().forEach {
-                            if(it.token == declaration) {
+                            if(it.token.equals(declaration,true)) {
                                 token = TokenProps(it,startPos,endPos)
                                 return@forEach
                             }
@@ -149,7 +149,32 @@ class `To BrainFuck Transpiler` {
         }
     }
 
-    class Parser(val tokens:List<TokenProps>){
+
+    class ParserException(message:String):Exception(message)
+    class Parser(val lexer:Lexer){
+        private var currentTokenIndex:Int = -1
+        private lateinit var currentToken:TokenProps
+
+        init {
+            if(lexer.tokens.isEmpty() || lexer.tokens.last().token != Token.EOT)
+                throw ParserException("There is no tokens for parsing")
+            nextToken()
+        }
+
+        private fun nextToken():TokenProps = let{currentToken = lexer.tokens[++currentTokenIndex];currentToken}
+        private fun peekToken():TokenProps = lexer.tokens[currentTokenIndex + 1]
+
+        private fun program(){
+            while (currentToken.token != Token.EOT)
+                statement()
+        }
+        private fun statement(){
+
+        }
+
+
+
+
 
     }
 
@@ -170,13 +195,21 @@ class `To BrainFuck Transpiler` {
 
 //        assertEquals(28, Lexer(source, true).tokens.size)
 //        println()
-        source = """
-            var L  [ 20, 21 ]  I X
-            var character 'C'
-            """.trimIndent()
+//        source = """
+//            var L  [ 20, 21 ]  I X
+//            var character 'C'
+//            """.trimIndent()
+//
+//        assertEquals(13, Lexer(source, true).tokens.size)
 
+
+        source = """
+            var X//This is a comment
+            read X--This is also a comment
+            mSg "Bye" X#No doubt it is a comment
+            rem &&Some comment~!@#${'$'}":<
+            """.trimIndent()
         assertEquals(13, Lexer(source, true).tokens.size)
-        val a =1
 
 
     }
