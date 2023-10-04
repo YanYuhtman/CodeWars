@@ -1,8 +1,8 @@
 import org.junit.jupiter.api.Test
 import kotlin.math.abs
-import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.sqrt
+import kotlin.reflect.KClass
 import kotlin.test.assertEquals
 
 const val EOT = '\u0004'
@@ -32,10 +32,11 @@ class `To BrainFuck Transpiler` {
         RBRAKET(TokenType.KEYWORD, "]"),
         COMMA(TokenType.KEYWORD, ","),
         VAR(TokenType.KEYWORD, "var"),
-        SET(TokenType.KEYWORD, "set"),
 
+        SET(TokenType.OPERATOR, "set"),
         INC(TokenType.OPERATOR, "inc"),
         DEC(TokenType.OPERATOR, "dec"),
+
         ADD(TokenType.OPERATOR, "add"),
         SUB(TokenType.OPERATOR, "sub"),
         MUL(TokenType.OPERATOR, "mul"),
@@ -63,7 +64,20 @@ class `To BrainFuck Transpiler` {
         REM(TokenType.KEYWORD, "rem"),
     }
 
-    data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, val id:String = token.id){}
+    data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, val id:String = token.id){
+        public infix fun <B:Any> to(that: KClass<B>): B {
+            try {
+                return when (that) {
+                    Int::class -> this.id.toInt()
+                    Char::class-> this.id[0]
+                    else -> throw ParserException("Unsupported type cast $this")
+                } as B
+            }catch (e:Exception){
+                throw ParserException("Invalid casting type exception of $this")
+            }
+
+        }
+    }
     class LexerException(message:String):Exception(message)
     class Lexer(private val source:String, val debug:Boolean = false){
 
@@ -123,7 +137,7 @@ class `To BrainFuck Transpiler` {
                         while (nextCharOrThrow("String resolution failed", EOL, EOT) != STRING_QUOTE);
                         token = TokenProps(Token.STRING, startPos + 1, curIndex, source.substring(startPos+1,curIndex))
                     }
-                    peek() in (WHITESPACE_CHARS + EOL + '/' + '-' + '#')-> {
+                    peek() in (WHITESPACE_CHARS + EOL + '/' + '-' + '#' + EOT)-> {
                         val endPos = curIndex + 1
                         val declaration = source.substring(startPos,endPos)
                         Token.values().forEach {
@@ -155,11 +169,11 @@ class `To BrainFuck Transpiler` {
 
 
     class ParserException(message:String):Exception(message)
-    class Parser(val lexer:Lexer){
+    class Parser(val lexer:Lexer, debug: Boolean = false){
         private var currentTokenIndex:Int = -1
-        private lateinit var currentToken:TokenProps
+        private var currentToken:TokenProps = TokenProps(Token.EOL,0,0)
 
-        val interpreter = Interpreter()
+        val interpreter = Interpreter(debug)
 
         init {
             if(lexer.tokens.isEmpty() || lexer.tokens.last().token != Token.EOT)
@@ -168,7 +182,7 @@ class `To BrainFuck Transpiler` {
             program()
         }
 
-        private fun nextToken():TokenProps = let{currentToken = lexer.tokens[++currentTokenIndex];currentToken}
+        private fun nextToken():TokenProps = let{currentToken = if(currentToken.token == Token.EOT) currentToken else lexer.tokens[++currentTokenIndex];currentToken}
         private fun nextSignificantToken() = run { while (nextToken().token == Token.EOL);}
 
         private fun isEndOfStatement(token:Token = currentToken.token) = token == Token.EOL || token == Token.EOT
@@ -180,13 +194,14 @@ class `To BrainFuck Transpiler` {
 
         }
         private fun statement(){
-            if(currentToken.token.type != TokenType.KEYWORD && currentToken.token != Token.EOL)
+            if(currentToken.token.type != TokenType.KEYWORD && currentToken.token.type != TokenType.OPERATOR && currentToken.token != Token.EOL)
                 throw ParserException("Token type misplaced: $currentToken")
 
             when(currentToken.token){
                 Token.VAR -> variableDeclaration()
                 Token.READ -> ioRead()
                 Token.MSG -> ioWrite()
+                Token.SET,Token.INC,Token.DEC -> unaryOperator()
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
             nextSignificantToken()
@@ -202,10 +217,10 @@ class `To BrainFuck Transpiler` {
                     val size = currentToken.id.toIntOrNull()
                     if(size == null || size < 0)
                         throw ParserException("Positive number is expected $currentToken")
-                    interpreter.mapVariable(id,size)
+                    interpreter.mapVariable(id,size*2)
 
                 }else
-                    interpreter.mapVariable(id,1)
+                    interpreter.mapVariable(id,2)
             }
         }
         private fun ioRead(){
@@ -218,34 +233,73 @@ class `To BrainFuck Transpiler` {
             while (!isEndOfStatement(nextToken().token)) {
                     when {
                         currentToken.token == Token.STRING -> interpreter.ioWriteString(currentToken.id)
-                        currentToken.token == Token.CHARACTER -> interpreter.ioWriteString("$currentToken.id")
+                        currentToken.token == Token.CHARACTER -> interpreter.ioWriteString("${currentToken.id}")
                         currentToken.token == Token.VAR_NAME -> interpreter.ioWriteVariable(currentToken.id)
                     }
                 }
         }
 
+        private fun unaryOperator(){
+            val operator = currentToken
+            if(nextToken().token != Token.VAR_NAME)
+                throw ParserException("Unary operator: ${operator.token} Expected a variable instead of  ${currentToken}")
+
+            var varId = currentToken.id
+            try {
+                when (operator.token) {
+                    Token.SET -> when (nextToken().token) {
+                        Token.VAR_NAME -> interpreter.set(varId, currentToken.id)
+                        Token.NUMBER -> interpreter.set(varId, currentToken to Int::class)
+                        Token.CHARACTER -> interpreter.set(varId, currentToken to Char::class)
+                        else -> throw ParserException("")
+                    }
+                    Token.INC -> when (nextToken().token) {
+                        Token.NUMBER -> interpreter.inc(varId, currentToken to Int::class)
+                        else -> throw ParserException("")
+                    }
+                    Token.DEC -> when (nextToken().token) {
+                        Token.NUMBER -> interpreter.dec(varId, currentToken to Int::class)
+                        else -> throw ParserException("")
+                    }
+                    else -> {}
+                }
+            }catch (e : ParserException){
+                throw ParserException("Una operator: ${operator.token} does not support $currentToken as argument")
+            }
+
+
+        }
+
+
     }
     class InterpreterException(message:String):Exception(message)
-    class Interpreter(){
+    class Interpreter(val debug:Boolean = false){
         private val memoryMap:MutableMap<String,Int> = mutableMapOf()
+        private val varValues:MutableMap<String,Int> = mutableMapOf()
         private var freeMemPointer = 0
         private var currentMemPointer = 0
         private val output:StringBuilder = StringBuilder()
 
+        private fun moveToPointer(id:String) = moveToPointer(memoryMap[id] ?: throw InterpreterException("Variable id: $id is not mapped in memory"))
         private fun moveToPointer(pointer:Int){
+            val output = StringBuilder()
+            val start = currentMemPointer
             val (addition,symbol) = if(pointer >= currentMemPointer) (1 to '>') else (-1 to '<')
             while (currentMemPointer != pointer) {
                 currentMemPointer += addition
                 output.append(symbol)
             }
+            if(debug) println("Moving pointer from $start to $currentMemPointer: $output" )
+            this.output.append(output)
         }
         fun mapVariable(id:String, size:Int):Int{
+            if(debug) println("Mapping variable $id to index $freeMemPointer with size: $size")
             memoryMap.put(id,freeMemPointer)
             freeMemPointer += size
             return freeMemPointer - size
         }
         fun ioRead(id:String){
-            moveToPointer(memoryMap[id] ?: throw InterpreterException("Variable id: $id is not mapped in memory"))
+            moveToPointer(id)
             output.append(",")
         }
         fun ioWriteString(str:String){
@@ -254,6 +308,7 @@ class `To BrainFuck Transpiler` {
         }
         private fun generateOutputFor(str:String){
             var currentMemCelValue = 0
+            val output = StringBuilder()
             str.forEach {
                 if(currentMemCelValue == it.code)
                     output.append(".")
@@ -272,11 +327,49 @@ class `To BrainFuck Transpiler` {
                     currentMemCelValue = it.code
                 }
             }
+            if(debug) println("Generated string output for $str: $output")
+            this.output.append(output)
+        }
+        private fun optimizedAddition(aValue:Int){
+            if(aValue == 0) return
+            val output = StringBuilder()
+            val symbol = if (aValue > 0) '+' else '-'
+            val add = abs(aValue)
+            if(add > 4) {
+                val mult = floor(sqrt(abs(add).toDouble())).toInt()
+                val reminder = if (mult == 0) add else add % (mult * mult)
+                output.append('>').append(CharArray(mult) { '+' }).append("[<")
+                    .append(CharArray(mult) { symbol }).append(">-]<")
+                    .append(CharArray(reminder) { symbol })
+            }else
+                output.append(CharArray(add) { symbol })
+            if(debug)
+                println("Optimized addition of $aValue : $output")
+            this.output.append(output)
         }
         fun ioWriteVariable(id:String){
-            moveToPointer(memoryMap[id] ?: throw InterpreterException("Variable id: $id is not mapped in memory"))
-            output.append(".")
+            try {
+                moveToPointer(id)
+                output.append(".")
+                if(debug) println("Writing variable $id to output")
+            }catch (e:InterpreterException){
+                println(e.message + "\nwriting to output as text!!!")
+                ioWriteString(id)
+            }
+
         }
+        fun set(setId:String, getId:String){
+            varValues[getId]?.let {
+                set(setId,it)
+            }?: throw InterpreterException("Variable copy is not supported")
+        }
+        fun set(setId: String,char: Char) = inc(setId,char.code)
+        fun set(setId:String, number:Int) = inc(setId,number)
+        fun inc(id:String, number: Int){
+            moveToPointer(id)
+            optimizedAddition(number)
+        }
+        fun dec(id:String, number: Int) = inc(id,-number)
 
         override fun toString() = output.toString()
     }
@@ -330,6 +423,26 @@ class `To BrainFuck Transpiler` {
         val result = Parser(Lexer(source)).interpreter.toString()
         val a = 1
 
+    }
+
+    @Test
+    fun `FixedTest 0 | Basic 1 | Works for set, inc, dec`()
+    {
+       var source = """
+		var A B
+		sEt A 'a'
+		msg a B
+		set B 50
+		msG A b
+		inc A 10
+		dec B -20
+		msg A B
+		""".trimIndent()
+
+        val result = Parser(Lexer(source),true).interpreter.toString()
+        println("result: $result" )
+        val a = 1
+//        ,"","a\u0000a2kF")
     }
 
 
