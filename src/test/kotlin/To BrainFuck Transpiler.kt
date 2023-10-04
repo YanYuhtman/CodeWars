@@ -240,6 +240,7 @@ class `To BrainFuck Transpiler` {
                 Token.READ -> ioRead()
                 Token.MSG -> ioWrite()
                 Token.SET,Token.INC,Token.DEC -> unaryOperator()
+
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
             nextSignificantToken()
@@ -391,15 +392,14 @@ class `To BrainFuck Transpiler` {
             if (debug) println("Writing variable $id to output")
         }
         fun set(setId:String, getId:String){
-            varValues[getId]?.let {
-                set(setId,it)
-            }?: throw InterpreterException("Variable copy is not supported")
+            set(setId,varValues[getId]?:throw InterpreterException("Variable $getId must be set first"))
         }
-        fun set(setId: String,char: Char) = inc(setId,char.code)
-        fun set(setId:String, number:Int) = inc(setId,number)
+        fun set(setId: String,char: Char) = run{dec(setId,varValues[setId]?:0); inc(setId,char.code)}
+        fun set(setId:String, number:Int) = run {dec(setId,varValues[setId]?:0);inc(setId,number and 0xFF)}
         fun inc(id:String, number: Int){
             moveToPointer(id)
             optimizedAddition(number)
+            varValues.put(id, (varValues[id] ?: 0) + number)
         }
         fun dec(id:String, number: Int) = inc(id,-number)
 
@@ -413,61 +413,36 @@ class `To BrainFuck Transpiler` {
         assertEquals("Hello, World!",brainFuckParse(">++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++[<+++++++>-]<++.------------.>++++++[<+++++++++>-]<+.<.+++.------.--------.>>>++++[<++++++++>-]<+.",""))
         assertEquals("Hello World!\n",brainFuckParse("+[>[<-[]>+[>+++>[+++++++++++>][>]-[<]>-]]++++++++++<]>>>>>>----.<<+++.<-..+++.<-.>>>.<<.+++.------.>-.<<+.<.",""))
     }
-    @Test
-    fun test_Lexer(){
-        var source = """
-            var num -222
-             var num 222
-            var digit '0'
-            var string "String string string"
-            var q w e
-            read q
-            read w
-            add q w e
-            msg q " " w " " e
-    
-            """.trimIndent()
 
-//        assertEquals(28, Lexer(source, true).tokens.size)
-//        println()
-//        source = """
-//            var L  [ 20, 21 ]  I X
-//            var character 'C'
-//            """.trimIndent()
-//
-//        assertEquals(13, Lexer(source, true).tokens.size)
-
-
-        source = """
-            var X//This is a comment
-            read X--This is also a comment
-            mSg "Bye" X#No doubt it is a comment
-            rem &&Some comment~!@#${'$'}":<
-            """.trimIndent()
-        assertEquals(13, Lexer(source, true).tokens.size)
-
-
+    fun kcuf(code: String): String {
+        return Parser(Lexer(code),true).interpreter.toString()
+    }
+    fun Check(_RawCode : String,Input : String = "",Expect : String = "",Message : String = "")
+    {
+        val RawCode = _RawCode.trimIndent()
+        println(RawCode)
+//        println("<b>Input :</b> ${Input.toCharArray().map{it.toInt()}}")
+//        println("<b>Expected output :</b> ${Expect.toCharArray().map{it.toInt()}}")
+        val Code = kcuf(RawCode)
+//        println("<b>Output code length :</b> ${Code.length}")
+        assertEquals(Expect,brainFuckParse(Code,Input),Message)
     }
     @Test
     fun parserTest(){
 
-        val source = """
+        Check("""
 		var X//This is a comment
 		read X--This is also a comment
 		msg "BByeeg" X#No doubt it is a comment
 		rem &&Some comment~!@#$":<
-		""".trimIndent()
-        //,"?","Bye?")
-
-        val result = Parser(Lexer(source)).interpreter.toString()
-        val a = 1
+		""","?","BByeeg?")
 
     }
 
     @Test
     fun `FixedTest 0 | Basic 1 | Works for set, inc, dec`()
     {
-       var source = """
+        Check("""
 		var A B
 		sEt A 'a'
 		msg a B
@@ -476,12 +451,36 @@ class `To BrainFuck Transpiler` {
 		inc A 10
 		dec B -20
 		msg A B
-		""".trimIndent()
+		""","","a\u0000a2kF")
+    }
+    @Test
+    fun `FixedTest 0 | Basic 2 | Works for kinds of numbers`()
+    {
+        Check("""
+		var X
+		set X  114514
+		msg X
+		set X -114514
+		msg X
+		set X 'X'
+		msg X
+		""","","\u0052\u00ae\u0058")
+    }
 
-        val result = Parser(Lexer(source),true).interpreter.toString()
-        println("result: $result" )
-        val a = 1
-//        ,"","a\u0000a2kF")
+    @Test
+    fun `FixedTest 0 | Basic 3 | Works for add, sub, mul`()
+    {
+        Check("""
+		var A B C
+		read A
+		read B
+		add a b c
+		msg a b c
+		sub a b a
+		msg a b c
+		mul b a c
+		msg a b c
+		""","0\u0007","\u0030\u0007\u0037\u0029\u0007\u0037\u0029\u0007\u001f")
     }
 
 
