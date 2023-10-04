@@ -1,9 +1,45 @@
 import org.junit.jupiter.api.Test
+import java.util.Stack
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sqrt
 import kotlin.reflect.KClass
 import kotlin.test.assertEquals
+
+fun brainFuckParse(command:String, input:String):String{
+    val output = StringBuilder()
+    val tape = Array(10000){Char(0)}
+    var tapePointer = 0
+    var codePointer = -1
+    var inputPointer = 0
+
+    while (++codePointer < command.length){
+        when(command[codePointer]){
+            '>' -> tapePointer++
+            '<' -> tapePointer--
+            '+' -> tape[tapePointer]++
+            '-' -> tape[tapePointer]--
+            '.' -> output.append(tape[tapePointer])
+            ',' -> tape[tapePointer] = input[inputPointer++]
+            '[' -> {
+
+                if(tape[tapePointer] == Char(0)){
+                    var counter = 1
+                    while (counter > 0)
+                        counter += (if(command[++codePointer] == '[') 1 else if (command[codePointer] == ']') -1 else 0)
+                }
+            }
+            ']' -> {
+                if(tape[tapePointer] != Char(0)){
+                    var counter = 1
+                    while (counter > 0)
+                        counter += (if(command[--codePointer] == ']') 1 else if (command[codePointer] == '[') -1 else 0)
+                }
+            }
+        }
+    }
+    return output.toString()
+}
 
 const val EOT = '\u0004'
 const val EOL = '\u000A'
@@ -12,6 +48,8 @@ const val STRING_QUOTE = '\"'
 val WHITESPACE_CHARS = charArrayOf(' ','\t','\r')
 class `To BrainFuck Transpiler` {
     //https://www.codewars.com/kata/59f9cad032b8b91e12000035
+
+
 
     enum class TokenType{
         BASIC,
@@ -152,7 +190,7 @@ class `To BrainFuck Transpiler` {
                             else {
                                 if (!declaration.matches("[_\$A-Za-z]+\\d*".toRegex()))
                                     throw LexerException("Declaration: $declaration at [$startPos,$endPos] does not match variable pattern")
-                                TokenProps(Token.VAR_NAME, startPos, endPos, declaration)
+                                TokenProps(Token.VAR_NAME, startPos, endPos, declaration.uppercase())
                             }
                         }
                     }
@@ -348,15 +386,9 @@ class `To BrainFuck Transpiler` {
             this.output.append(output)
         }
         fun ioWriteVariable(id:String){
-            try {
-                moveToPointer(id)
-                output.append(".")
-                if(debug) println("Writing variable $id to output")
-            }catch (e:InterpreterException){
-                println(e.message + "\nwriting to output as text!!!")
-                ioWriteString(id)
-            }
-
+            moveToPointer(id)
+            output.append(".")
+            if (debug) println("Writing variable $id to output")
         }
         fun set(setId:String, getId:String){
             varValues[getId]?.let {
@@ -374,6 +406,13 @@ class `To BrainFuck Transpiler` {
         override fun toString() = output.toString()
     }
 
+
+    @Test
+    fun brainFuckTest(){
+        assertEquals("Hello World!\n",brainFuckParse("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.",""))
+        assertEquals("Hello, World!",brainFuckParse(">++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++[<+++++++>-]<++.------------.>++++++[<+++++++++>-]<+.<.+++.------.--------.>>>++++[<++++++++>-]<+.",""))
+        assertEquals("Hello World!\n",brainFuckParse("+[>[<-[]>+[>+++>[+++++++++++>][>]-[<]>-]]++++++++++<]>>>>>>----.<<+++.<-..+++.<-.>>>.<<.+++.------.>-.<<+.<.",""))
+    }
     @Test
     fun test_Lexer(){
         var source = """
