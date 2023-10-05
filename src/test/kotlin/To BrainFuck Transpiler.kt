@@ -325,6 +325,7 @@ class `To BrainFuck Transpiler` {
             when(operator.token){
                 Token.ADD-> interpreter.add(list)
                 Token.SUB->interpreter.sub(list)
+                Token.MUL->interpreter.mul(list)
                 else -> throw ParserException("Operator: $operator is not supported")
             }
         }
@@ -497,8 +498,14 @@ class `To BrainFuck Transpiler` {
 
         fun mul(tokens:Array<TokenProps>){
             var oIndex = output.length
+            moveToPointer(tokens[1].id).append("[->+")
+            currentMemPointer++
+            copy(memoryMap[tokens[0].id]!!,freeMemPointer)
+            moveToPointer(tokens[1].id).append("]")
+            recombine(memoryMap[tokens[1].id]!!)
+            mapVariable(tokens[2].id,2)
 
-
+            if(debug) println("Operator MUL: ${output.substring(oIndex)}")
         }
         override fun toString() = output.toString()
     }
@@ -588,9 +595,9 @@ class `To BrainFuck Transpiler` {
 		msg a b c
 		sub a b a
 		msg a b c
-//		mul b a c
-//		msg a b c
-		""","0\u0007","\u0030\u0007\u0037\u0029\u0007\u0037")//\u0029\u0007\u001f")
+		mul b a c
+		msg a b c
+		""","0\u0007","\u0030\u0007\u0037\u0029\u0007\u0037\u0029\u0007\u001f")
     }
     @Test
     fun `FixedTest 0 | Basic 3 | Works for add, sub`(){
@@ -617,12 +624,14 @@ class `To BrainFuck Transpiler` {
     fun `FixedTest 0 | Basic 3 | Works for mul`(){
         Check("""
 		var A B C
-        read A
-//        mul A B C
-        add A A C
+        read A 
+        read B
         
-        msg C
-        ""","\u0002\u0003","\u0004"/*"\u0006"*/)
+        mul A B C
+//        add A A C
+        
+        msg A B C
+        ""","\u0029\u0007","\u0002\u0003\u0006")
     }
 
 
