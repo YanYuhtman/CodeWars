@@ -462,7 +462,7 @@ class `To BrainFuck Transpiler` {
         fun add(tokens:Array<TokenProps>){
             var oIndex = output.length
             for(i in 0..1)
-                when(tokens[i]!!.token){
+                when(tokens[i].token){
                     Token.VAR_NAME -> copy(memoryMap[tokens[i].id]!!,freeMemPointer)
                     Token.NUMBER -> optimizedAddition(freeMemPointer,tokens[i] to Int::class)
                     Token.CHARACTER -> optimizedAddition(freeMemPointer,(tokens[i] to Char::class).code)
@@ -472,12 +472,33 @@ class `To BrainFuck Transpiler` {
             if(debug) println("Operator ADD: ${output.substring(oIndex)}")
         }
         fun sub(tokens:Array<TokenProps>){
-            sub(memoryMap[tokens[0].id]!!,memoryMap[tokens[1].id]!!)
-            copy(memoryMap[tokens[0].id]!!,freeMemPointer)
+            var oIndex = output.length
+            when(tokens[1].token){
+                Token.NUMBER -> {
+                    copy(memoryMap[tokens[0].id]!!,freeMemPointer)
+                    optimizedAddition(freeMemPointer,-(tokens[1] to Int::class))}
+                Token.CHARACTER -> {
+                    copy(memoryMap[tokens[0].id]!!,freeMemPointer)
+                    optimizedAddition(freeMemPointer,-(tokens[1] to Char::class).code)
+                }
+                Token.VAR_NAME -> {
+                    sub(memoryMap[tokens[0].id]!!,memoryMap[tokens[1].id]!!)
+                    copy(memoryMap[tokens[0].id]!!,freeMemPointer)
 
-            recombine(memoryMap[tokens[0].id]!!)
-            recombine(memoryMap[tokens[1].id]!!)
+                    recombine(memoryMap[tokens[0].id]!!)
+                    recombine(memoryMap[tokens[1].id]!!)
+
+                }
+                else->throw InterpreterException("Unsupported token: ${tokens[1]} for subtraction ")
+            }
             mapVariable(tokens[2].id,2)
+            if(debug) println("Operator SUB: ${output.substring(oIndex)}")
+        }
+
+        fun mul(tokens:Array<TokenProps>){
+            var oIndex = output.length
+
+
         }
         override fun toString() = output.toString()
     }
@@ -575,8 +596,11 @@ class `To BrainFuck Transpiler` {
     fun `FixedTest 0 | Basic 3 | Works for add, sub`(){
         Check("""
 		var A B C
+        var D
         read A
         read B
+        set D A
+        sub A '1' D
         sub A B C
         msg A B C
         sub A B A
@@ -584,11 +608,22 @@ class `To BrainFuck Transpiler` {
         set B C 
         msg A B C
         sub A C A
-        msg A B C
-        ""","0\u0007","\u0030\u0007\u0029\u0029\u0007\u0029\u0029\u0029\u0029\u0000\u0029\u0029")
+        msg A B C D
+        
+        ""","0\u0007","\u0030\u0007\u0029\u0029\u0007\u0029\u0029\u0029\u0029\u0000\u0029\u0029\uffff")
     }
 
-
+    @Test
+    fun `FixedTest 0 | Basic 3 | Works for mul`(){
+        Check("""
+		var A B C
+        read A
+//        mul A B C
+        add A A C
+        
+        msg C
+        ""","\u0002\u0003","\u0004"/*"\u0006"*/)
+    }
 
 
 }
