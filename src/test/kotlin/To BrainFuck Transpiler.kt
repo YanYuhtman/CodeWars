@@ -58,6 +58,7 @@ class `To BrainFuck Transpiler` {
         OPERATOR,
     }
     enum class Token(val type:TokenType, val id:String){
+        DUMMY(TokenType.BASIC, ""),
         EOT(TokenType.BASIC, "$EOT"),
         EOL(TokenType.BASIC, "$EOL"),
         VAR_NAME(TokenType.ID, ""),
@@ -101,7 +102,6 @@ class `To BrainFuck Transpiler` {
 
         REM(TokenType.KEYWORD, "rem"),
     }
-
     data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, val id:String = token.id){
         public infix fun <B:Any> to(that: KClass<B>): B {
             try {
@@ -240,6 +240,7 @@ class `To BrainFuck Transpiler` {
                 Token.READ -> ioRead()
                 Token.MSG -> ioWrite()
                 Token.SET,Token.INC,Token.DEC -> unaryOperator()
+                Token.ADD,Token.SUB,Token.MUL,Token.DIV,Token.DIVMOD -> binaryOperator()
 
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
@@ -309,6 +310,23 @@ class `To BrainFuck Transpiler` {
 
         }
 
+        private fun binaryOperator(){
+            val operator = currentToken
+            val list:Array<TokenProps> = Array(3){ TokenProps(Token.DUMMY,0,0,"") }
+            for(i in 0..1) {
+                list[i] = nextToken()
+                when(list[i].token){
+                    Token.NUMBER,Token.CHARACTER,Token.VAR_NAME -> {}
+                    else -> throw ParserException("For binary operation argument $i token ${list[i].token} is invalid")
+                }
+            }
+            list[2] = nextToken(); if(list[2].token != Token.VAR_NAME) throw ParserException("For binary operation last argument must be a VARIABLE")
+            when(operator.token){
+                Token.ADD-> interpreter.add(list)
+                else -> throw ParserException("Operator: $operator is not supported")
+            }
+        }
+
 
     }
     class InterpreterException(message:String):Exception(message)
@@ -370,6 +388,7 @@ class `To BrainFuck Transpiler` {
             if(debug) println("Generated string output for $str: ${output.substring(ouIndex)}")
 
         }
+        private fun optimizedAddition(pointer:Int, aValue: Int) {moveToPointer(pointer);optimizedAddition(aValue)}
         private fun optimizedAddition(aValue:Int){
             if(aValue == 0) return
             val oIndex = output.length
@@ -403,15 +422,16 @@ class `To BrainFuck Transpiler` {
             moveToPointer(id)
             optimizedAddition(number)
         }
-        fun clear(id:String) {clear(memoryMap[id]!!) }
+        fun clear(id:String) = mapVariable(id,2)//clear(memoryMap[id]!!)
+
         fun clear(pointer:Int){
             moveToPointer(pointer)
             output.append("[-]")
             if(debug) println("Clearing pointer index: $pointer")
         }
 
+        fun copy(fromId:String, toId: String) = copy(memoryMap[fromId]!!,memoryMap[toId]!!)
         fun copy(fromPointer:Int, toPointer:Int){
-
             var oIndex = this.output.length
             moveToPointer(fromPointer)
             output.append("[->+")
@@ -422,12 +442,18 @@ class `To BrainFuck Transpiler` {
         }
         fun dec(id:String, number: Int) = inc(id,-number)
 
-        fun add(fromId0:String, fromId1: String, toId:String){
+        fun add(tokens:Array<TokenProps>){
             var oIndex = output.length
-//            copy(fromId0,toId)
-
+            for(i in 0..1)
+                when(tokens[i]!!.token){
+                    Token.VAR_NAME -> copy(memoryMap[tokens[i].id]!!,freeMemPointer)
+                    Token.NUMBER -> optimizedAddition(freeMemPointer,tokens[i] to Int::class)
+                    Token.CHARACTER -> optimizedAddition(freeMemPointer,(tokens[i] to Char::class).code)
+                    else->throw InterpreterException("Unsupported token: ${tokens[i]} for addition")
+                }
+            mapVariable(tokens[2].id,1)
+            if(debug) println("Operator ADD: ${output.substring(oIndex)}")
         }
-
         override fun toString() = output.toString()
     }
 
@@ -514,11 +540,11 @@ class `To BrainFuck Transpiler` {
 		read B
 		add a b c
 		msg a b c
-		sub a b a
-		msg a b c
-		mul b a c
-		msg a b c
-		""","0\u0007","\u0030\u0007\u0037\u0029\u0007\u0037\u0029\u0007\u001f")
+//		sub a b a
+//		msg a b c
+//		mul b a c
+//		msg a b c
+		""","0\u0007","\u0030\u0007\u0037")//\u0029\u0007\u0037\u0029\u0007\u001f")
     }
 
 
