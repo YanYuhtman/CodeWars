@@ -314,22 +314,22 @@ class `To BrainFuck Transpiler` {
     class InterpreterException(message:String):Exception(message)
     class Interpreter(val debug:Boolean = false){
         private val memoryMap:MutableMap<String,Int> = mutableMapOf()
-        private val varValues:MutableMap<String,Int> = mutableMapOf()
         private var freeMemPointer = 0
         private var currentMemPointer = 0
         private val output:StringBuilder = StringBuilder()
 
         private fun moveToPointer(id:String) = moveToPointer(memoryMap[id] ?: throw InterpreterException("Variable id: $id is not mapped in memory"))
-        private fun moveToPointer(pointer:Int, output:StringBuilder = this.output):StringBuilder{
-            val outTemp = StringBuilder()
+        private fun moveToPointer(pointer:Int):StringBuilder{
+            if(pointer == currentMemPointer)
+                return output
+            val oIndex = output.length
             val start = currentMemPointer
             val (addition,symbol) = if(pointer >= currentMemPointer) (1 to '>') else (-1 to '<')
             while (currentMemPointer != pointer) {
                 currentMemPointer += addition
-                outTemp.append(symbol)
+                output.append(symbol)
             }
-            if(debug) println("Moving pointer from $start to $currentMemPointer: $outTemp" )
-            output.append(outTemp)
+            if(debug) println("Moving pointer from $start to $currentMemPointer: ${output.substring(oIndex)}" )
             return output
         }
         fun mapVariable(id:String, size:Int):Int{
@@ -348,7 +348,7 @@ class `To BrainFuck Transpiler` {
         }
         private fun generateOutputFor(str:String){
             var currentMemCelValue = 0
-            val output = StringBuilder()
+            val ouIndex = output.length
             str.forEach {
                 if(currentMemCelValue == it.code)
                     output.append(".")
@@ -367,12 +367,12 @@ class `To BrainFuck Transpiler` {
                     currentMemCelValue = it.code
                 }
             }
-            if(debug) println("Generated string output for $str: $output")
-            this.output.append(output)
+            if(debug) println("Generated string output for $str: ${output.substring(ouIndex)}")
+
         }
         private fun optimizedAddition(aValue:Int){
             if(aValue == 0) return
-            val output = StringBuilder()
+            val oIndex = output.length
             val symbol = if (aValue > 0) '+' else '-'
             val add = abs(aValue)
             if(add > 4) {
@@ -383,9 +383,9 @@ class `To BrainFuck Transpiler` {
                     .append(CharArray(reminder) { symbol })
             }else
                 output.append(CharArray(add) { symbol })
-            if(debug)
-                println("Optimized addition of $aValue : $output")
-            this.output.append(output)
+
+            if(debug) println("Optimized addition of $aValue : ${output.substring(oIndex)}")
+
         }
         fun ioWriteVariable(id:String){
             moveToPointer(id)
@@ -394,29 +394,39 @@ class `To BrainFuck Transpiler` {
         }
         fun set(setId:String, getId:String){
             if(debug) println("Setting variable $setId from variable $getId")
+            clear(setId)
             copy(memoryMap[getId]!!,memoryMap[setId]!!)
         }
-        fun set(setId: String,char: Char) = run{dec(setId,varValues[setId]?:0); inc(setId,char.code)}
-        fun set(setId:String, number:Int) = run {dec(setId,varValues[setId]?:0);inc(setId,number and 0xFF)}
+        fun set(setId: String,char: Char)  {clear(setId) ;inc(setId,char.code)}
+        fun set(setId:String, number:Int)  {clear(setId); inc(setId,number and 0xFF) }
         fun inc(id:String, number: Int){
             moveToPointer(id)
             optimizedAddition(number)
-            varValues.put(id, (varValues[id] ?: 0) + number)
+        }
+        fun clear(id:String) {clear(memoryMap[id]!!) }
+        fun clear(pointer:Int){
+            moveToPointer(pointer)
+            output.append("[-]")
+            if(debug) println("Clearing pointer index: $pointer")
         }
 
         fun copy(fromPointer:Int, toPointer:Int){
 
-            var outTemp = StringBuilder()
-            moveToPointer(fromPointer, outTemp)
-            outTemp.append("[->+")
+            var oIndex = this.output.length
+            moveToPointer(fromPointer)
+            output.append("[->+")
             currentMemPointer++
-            moveToPointer(toPointer, outTemp).append("+")
-            moveToPointer(fromPointer, outTemp).append("]").append(">[-<+>]<")
-            if(debug) println("Copy $fromPointer to $toPointer: $outTemp" )
-            this.output.append(outTemp)
-
+            moveToPointer(toPointer).append("+")
+            moveToPointer(fromPointer).append("]").append(">[-<+>]<")
+            if(debug) println("Copy $fromPointer to $toPointer: ${output.substring(oIndex)}" )
         }
         fun dec(id:String, number: Int) = inc(id,-number)
+
+        fun add(fromId0:String, fromId1: String, toId:String){
+            var oIndex = output.length
+//            copy(fromId0,toId)
+
+        }
 
         override fun toString() = output.toString()
     }
