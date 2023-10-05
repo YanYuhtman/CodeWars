@@ -38,6 +38,7 @@ fun brainFuckParse(command:String, input:String):String{
             }
         }
     }
+    println(output.map { "\\u%04x".format(it.code) })
     return output.toString()
 }
 
@@ -323,6 +324,7 @@ class `To BrainFuck Transpiler` {
             list[2] = nextToken(); if(list[2].token != Token.VAR_NAME) throw ParserException("For binary operation last argument must be a VARIABLE")
             when(operator.token){
                 Token.ADD-> interpreter.add(list)
+                Token.SUB->interpreter.sub(list)
                 else -> throw ParserException("Operator: $operator is not supported")
             }
         }
@@ -422,24 +424,39 @@ class `To BrainFuck Transpiler` {
             moveToPointer(id)
             optimizedAddition(number)
         }
-        fun clear(id:String) = mapVariable(id,2)//clear(memoryMap[id]!!)
+        private fun clear(id:String) = mapVariable(id,2)//clear(memoryMap[id]!!)
 
-        fun clear(pointer:Int){
+        private fun clear(pointer:Int){
             moveToPointer(pointer)
             output.append("[-]")
             if(debug) println("Clearing pointer index: $pointer")
         }
 
-        fun copy(fromId:String, toId: String) = copy(memoryMap[fromId]!!,memoryMap[toId]!!)
-        fun copy(fromPointer:Int, toPointer:Int){
+        private fun copy(fromId:String, toId: String) = copy(memoryMap[fromId]!!,memoryMap[toId]!!)
+        private fun copy(fromPtr:Int, toPtr:Int){
             var oIndex = this.output.length
-            moveToPointer(fromPointer)
+            moveToPointer(fromPtr)
             output.append("[->+")
             currentMemPointer++
-            moveToPointer(toPointer).append("+")
-            moveToPointer(fromPointer).append("]").append(">[-<+>]<")
-            if(debug) println("Copy $fromPointer to $toPointer: ${output.substring(oIndex)}" )
+            moveToPointer(toPtr).append("+")
+            moveToPointer(fromPtr).append("]")
+            recombine(fromPtr)//.append(">[-<+>]<")
+            if(debug) println("Copy $fromPtr to $toPtr: ${output.substring(oIndex)}" )
         }
+        private fun recombine(ptr:Int) = moveToPointer(ptr).append(">[-<+>]<")
+
+        private fun sub(fromPtr: Int, thatPtr:Int){
+            var oIndex = this.output.length
+            moveToPointer(thatPtr)
+            output.append("[->+")
+            currentMemPointer++
+            moveToPointer(fromPtr + 1).append("+<-")
+            currentMemPointer--
+            moveToPointer(thatPtr).append("]")
+            if(debug) println("sub fromPtr: $fromPtr, thatPtr: $thatPtr ${output.substring(oIndex)}" )
+
+        }
+
         fun dec(id:String, number: Int) = inc(id,-number)
 
         fun add(tokens:Array<TokenProps>){
@@ -451,8 +468,16 @@ class `To BrainFuck Transpiler` {
                     Token.CHARACTER -> optimizedAddition(freeMemPointer,(tokens[i] to Char::class).code)
                     else->throw InterpreterException("Unsupported token: ${tokens[i]} for addition")
                 }
-            mapVariable(tokens[2].id,1)
+            mapVariable(tokens[2].id,2)
             if(debug) println("Operator ADD: ${output.substring(oIndex)}")
+        }
+        fun sub(tokens:Array<TokenProps>){
+            sub(memoryMap[tokens[0].id]!!,memoryMap[tokens[1].id]!!)
+            copy(memoryMap[tokens[0].id]!!,freeMemPointer)
+
+            recombine(memoryMap[tokens[0].id]!!)
+            recombine(memoryMap[tokens[1].id]!!)
+            mapVariable(tokens[2].id,2)
         }
         override fun toString() = output.toString()
     }
@@ -540,11 +565,27 @@ class `To BrainFuck Transpiler` {
 		read B
 		add a b c
 		msg a b c
-//		sub a b a
-//		msg a b c
+		sub a b a
+		msg a b c
 //		mul b a c
 //		msg a b c
-		""","0\u0007","\u0030\u0007\u0037")//\u0029\u0007\u0037\u0029\u0007\u001f")
+		""","0\u0007","\u0030\u0007\u0037\u0029\u0007\u0037")//\u0029\u0007\u001f")
+    }
+    @Test
+    fun `FixedTest 0 | Basic 3 | Works for add, sub`(){
+        Check("""
+		var A B C
+        read A
+        read B
+        sub A B C
+        msg A B C
+        sub A B A
+        msg A B C
+        set B C 
+        msg A B C
+        sub A C A
+        msg A B C
+        ""","0\u0007","\u0030\u0007\u0029\u0029\u0007\u0029\u0029\u0029\u0029\u0000\u0029\u0029")
     }
 
 
