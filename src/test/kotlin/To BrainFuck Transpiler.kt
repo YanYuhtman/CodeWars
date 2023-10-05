@@ -1,5 +1,4 @@
 import org.junit.jupiter.api.Test
-import java.util.Stack
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sqrt
@@ -7,6 +6,7 @@ import kotlin.reflect.KClass
 import kotlin.test.assertEquals
 
 fun brainFuckParse(command:String, input:String):String{
+    println("Executing BrainFuck for code: $command and input: $input")
     val output = StringBuilder()
     val tape = Array(10000){Char(0)}
     var tapePointer = 0
@@ -320,16 +320,17 @@ class `To BrainFuck Transpiler` {
         private val output:StringBuilder = StringBuilder()
 
         private fun moveToPointer(id:String) = moveToPointer(memoryMap[id] ?: throw InterpreterException("Variable id: $id is not mapped in memory"))
-        private fun moveToPointer(pointer:Int){
-            val output = StringBuilder()
+        private fun moveToPointer(pointer:Int, output:StringBuilder = this.output):StringBuilder{
+            val outTemp = StringBuilder()
             val start = currentMemPointer
             val (addition,symbol) = if(pointer >= currentMemPointer) (1 to '>') else (-1 to '<')
             while (currentMemPointer != pointer) {
                 currentMemPointer += addition
-                output.append(symbol)
+                outTemp.append(symbol)
             }
-            if(debug) println("Moving pointer from $start to $currentMemPointer: $output" )
-            this.output.append(output)
+            if(debug) println("Moving pointer from $start to $currentMemPointer: $outTemp" )
+            output.append(outTemp)
+            return output
         }
         fun mapVariable(id:String, size:Int):Int{
             if(debug) println("Mapping variable $id to index $freeMemPointer with size: $size")
@@ -392,7 +393,8 @@ class `To BrainFuck Transpiler` {
             if (debug) println("Writing variable $id to output")
         }
         fun set(setId:String, getId:String){
-            set(setId,varValues[getId]?:throw InterpreterException("Variable $getId must be set first"))
+            if(debug) println("Setting variable $setId from variable $getId")
+            copy(memoryMap[getId]!!,memoryMap[setId]!!)
         }
         fun set(setId: String,char: Char) = run{dec(setId,varValues[setId]?:0); inc(setId,char.code)}
         fun set(setId:String, number:Int) = run {dec(setId,varValues[setId]?:0);inc(setId,number and 0xFF)}
@@ -400,6 +402,19 @@ class `To BrainFuck Transpiler` {
             moveToPointer(id)
             optimizedAddition(number)
             varValues.put(id, (varValues[id] ?: 0) + number)
+        }
+
+        fun copy(fromPointer:Int, toPointer:Int){
+
+            var outTemp = StringBuilder()
+            moveToPointer(fromPointer, outTemp)
+            outTemp.append("[->+")
+            currentMemPointer++
+            moveToPointer(toPointer, outTemp).append("+")
+            moveToPointer(fromPointer, outTemp).append("]").append(">[-<+>]<")
+            if(debug) println("Copy $fromPointer to $toPointer: $outTemp" )
+            this.output.append(outTemp)
+
         }
         fun dec(id:String, number: Int) = inc(id,-number)
 
@@ -437,6 +452,19 @@ class `To BrainFuck Transpiler` {
 		rem &&Some comment~!@#$":<
 		""","?","BByeeg?")
 
+    }
+    @Test
+    fun `FixedTest 0 | Basic 1 | set var get var`(){
+        Check("""
+            var A B //Testing copy by variable 
+            set A 'x'
+            set B A
+            msg A B
+            var C D
+            read C //Testing copy by code
+            set D C
+            msg C D
+        ""","X","xxXX")
     }
 
     @Test
