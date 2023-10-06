@@ -2,6 +2,7 @@ import org.junit.jupiter.api.Test
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sqrt
+import kotlin.random.Random
 import kotlin.reflect.KClass
 import kotlin.test.assertEquals
 
@@ -38,8 +39,8 @@ fun brainFuckParse(command:String, input:String):String{
             }
         }
     }
-    println(output.map { "\\u%04x".format(it.code) })
-    return output.toString()
+    println(output.map { "\\u%04x".format(it.code and 0xFF) })
+    return output.map { (it.code and 0xFF).toChar() }.joinToString("")
 }
 
 const val EOT = '\u0004'
@@ -47,6 +48,7 @@ const val EOL = '\u000A'
 const val CHAR_QUOTE = '\''
 const val STRING_QUOTE = '\"'
 val WHITESPACE_CHARS = charArrayOf(' ','\t','\r')
+const val VARIABLE_SIZE = 2
 class `To BrainFuck Transpiler` {
     //https://www.codewars.com/kata/59f9cad032b8b91e12000035
 
@@ -103,7 +105,7 @@ class `To BrainFuck Transpiler` {
 
         REM(TokenType.KEYWORD, "rem"),
     }
-    data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, val id:String = token.id){
+    data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, var id:String = token.id){
         public infix fun <B:Any> to(that: KClass<B>): B {
             try {
                 return when (that) {
@@ -258,10 +260,10 @@ class `To BrainFuck Transpiler` {
                     val size = currentToken.id.toIntOrNull()
                     if(size == null || size < 0)
                         throw ParserException("Positive number is expected $currentToken")
-                    interpreter.mapVariable(id,size*2)
+                    interpreter.mapVariable(id,size*VARIABLE_SIZE)
 
                 }else
-                    interpreter.mapVariable(id,2)
+                    interpreter.mapVariable(id,VARIABLE_SIZE)
             }
         }
         private fun ioRead(){
@@ -359,12 +361,13 @@ class `To BrainFuck Transpiler` {
             freeMemPointer += size
             return freeMemPointer - size
         }
+        private fun generateTempVariableId(original:String) = "${Random.nextBytes(1)}#$original"
         fun ioRead(id:String){
             moveToPointer(id)
             output.append(",")
         }
         fun ioWriteString(str:String){
-            moveToPointer(mapVariable("#$str",2))
+            moveToPointer(mapVariable(generateTempVariableId("str"),2))
             generateOutputFor(str)
         }
         private fun generateOutputFor(str:String){
@@ -425,7 +428,7 @@ class `To BrainFuck Transpiler` {
             moveToPointer(id)
             optimizedAddition(number)
         }
-        private fun clear(id:String) = mapVariable(id,2)//clear(memoryMap[id]!!)
+        private fun clear(id:String) = mapVariable(id,VARIABLE_SIZE)//clear(memoryMap[id]!!)
 
         private fun clear(pointer:Int){
             moveToPointer(pointer)
@@ -434,6 +437,14 @@ class `To BrainFuck Transpiler` {
         }
 
         private fun copy(fromId:String, toId: String) = copy(memoryMap[fromId]!!,memoryMap[toId]!!)
+        private fun copyToTempVariable(original:TokenProps):TokenProps{
+            val tmpToken = original.copy()
+            tmpToken.id = generateTempVariableId(tmpToken.id)
+            mapVariable(tmpToken.id,VARIABLE_SIZE)
+            copy(original.id,tmpToken.id)
+            if (debug) println("Copying var ${original.id} to tempVariable ${tmpToken.id}")
+            return tmpToken
+        }
         private fun copy(fromPtr:Int, toPtr:Int){
             var oIndex = this.output.length
             moveToPointer(fromPtr)
@@ -469,7 +480,7 @@ class `To BrainFuck Transpiler` {
                     Token.CHARACTER -> optimizedAddition(freeMemPointer,(tokens[i] to Char::class).code)
                     else->throw InterpreterException("Unsupported token: ${tokens[i]} for addition")
                 }
-            mapVariable(tokens[2].id,2)
+            mapVariable(tokens[2].id,VARIABLE_SIZE)
             if(debug) println("Operator ADD: ${output.substring(oIndex)}")
         }
         fun sub(tokens:Array<TokenProps>){
@@ -492,18 +503,21 @@ class `To BrainFuck Transpiler` {
                 }
                 else->throw InterpreterException("Unsupported token: ${tokens[1]} for subtraction ")
             }
-            mapVariable(tokens[2].id,2)
+            mapVariable(tokens[2].id,VARIABLE_SIZE)
             if(debug) println("Operator SUB: ${output.substring(oIndex)}")
         }
 
         fun mul(tokens:Array<TokenProps>){
             var oIndex = output.length
+            if(tokens[0].token == Token.VAR_NAME && tokens[0].id == tokens[1].id)
+                tokens[1] = copyToTempVariable(tokens[1])
+
             moveToPointer(tokens[1].id).append("[->+")
             currentMemPointer++
             copy(memoryMap[tokens[0].id]!!,freeMemPointer)
             moveToPointer(tokens[1].id).append("]")
             recombine(memoryMap[tokens[1].id]!!)
-            mapVariable(tokens[2].id,2)
+            mapVariable(tokens[2].id,VARIABLE_SIZE)
 
             if(debug) println("Operator MUL: ${output.substring(oIndex)}")
         }
@@ -617,21 +631,22 @@ class `To BrainFuck Transpiler` {
         sub A C A
         msg A B C D
         
-        ""","0\u0007","\u0030\u0007\u0029\u0029\u0007\u0029\u0029\u0029\u0029\u0000\u0029\u0029\uffff")
+        ""","0\u0007","\u0030\u0007\u0029\u0029\u0007\u0029\u0029\u0029\u0029\u0000\u0029\u0029\u00ff")
     }
 
     @Test
     fun `FixedTest 0 | Basic 3 | Works for mul`(){
         Check("""
 		var A B C
-        read A 
+        read A
         read B
-        
+
         mul A B C
-//        add A A C
-        
-        msg A B C
-        ""","\u0029\u0007","\u0002\u0003\u0006")
+        var D
+        mul A A D //This call will cause endless loop: to resolve this A must be copied to different memory slot 
+
+        msg A B C D
+        ""","\u0002\u0003","\u0002\u0003\u0006\u0004")
     }
 
 
