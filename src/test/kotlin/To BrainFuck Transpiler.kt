@@ -244,7 +244,7 @@ class `To BrainFuck Transpiler` {
                 Token.READ -> ioRead()
                 Token.MSG -> ioWrite()
                 Token.SET,Token.INC,Token.DEC -> unaryOperator()
-                Token.ADD,Token.SUB,Token.MUL,Token.DIV,Token.DIVMOD -> binaryOperator()
+                Token.ADD,Token.SUB,Token.MUL,Token.DIV,Token.MOD,Token.DIVMOD -> binaryOperator()
 
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
@@ -332,6 +332,8 @@ class `To BrainFuck Transpiler` {
                 Token.DIVMOD->{list[3] = nextToken(); if(list[3].token != Token.VAR_NAME) throw ParserException("divMod requires 2 output variable arguments")
                     interpreter.divMod(list)
                 }
+                Token.DIV->interpreter.div(list)
+                Token.MOD->interpreter.mod(list)
                 else -> throw ParserException("Operator: $operator is not supported")
             }
         }
@@ -530,8 +532,13 @@ class `To BrainFuck Transpiler` {
             mapVariable(tokens[2].id,VARIABLE_SIZE)
 
             if(debug) println("Operator MUL: ${output.substring(oIndex)}")
+
+
         }
-        fun divMod(tokens:Array<TokenProps>){
+        fun mod(tokens:Array<TokenProps>) = divMod(tokens,2)
+        fun div(tokens:Array<TokenProps>) = divMod(tokens,1)
+        fun divMod(tokens:Array<TokenProps>) = divMod(tokens, 0)
+        private fun divMod(tokens:Array<TokenProps>, mode:Int = 0){
             var oIndex = output.length
             val nPtr = copy(memoryMap[tokens[0].id]!!,freeMemPointer)
             freeMemPointer+=VARIABLE_SIZE
@@ -541,9 +548,14 @@ class `To BrainFuck Transpiler` {
 
             moveToPointer(nPtr).append("[->>-[>>+>>>>]>>[[-<<+>>]+>>+>>>>]<<<<<<<<<<]>>>>-")
             currentMemPointer+=4
-
-            mapVariable(tokens[3].id,VARIABLE_SIZE,currentMemPointer)
-            mapVariable(tokens[2].id,VARIABLE_SIZE,currentMemPointer + 2)
+            when(mode) {
+                0-> {
+                    mapVariable(tokens[3].id, VARIABLE_SIZE, currentMemPointer)
+                    mapVariable(tokens[2].id, VARIABLE_SIZE, currentMemPointer + 2)
+                }
+                1-> mapVariable(tokens[2].id, VARIABLE_SIZE, currentMemPointer + 2)
+                2-> mapVariable(tokens[2].id, VARIABLE_SIZE, currentMemPointer)
+            }
 
             if(debug) println("Operator DIVMOD: ${output.substring(oIndex)} ")
 
@@ -688,11 +700,11 @@ class `To BrainFuck Transpiler` {
 		set B 13    
         divmod A B C D
 		msg A B C D
-//		div C D C
-//		msg A B C D
-//		mod A D A
-//		msg A B C D
-		""","","\u004f\u000d\u0006\u0001")//\u004f\u000d\u0006\u0001\u0000\u000d\u0006\u0001")
+		div C D C
+		msg A B C D
+		mod A D A
+		msg A B C D
+		""","","\u004f\u000d\u0006\u0001\u004f\u000d\u0006\u0001\u0000\u000d\u0006\u0001")
     }
 
 
