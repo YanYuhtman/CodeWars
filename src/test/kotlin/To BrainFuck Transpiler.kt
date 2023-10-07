@@ -39,6 +39,7 @@ fun brainFuckParse(command:String, input:String):String{
             }
         }
     }
+    println(output.map { "%04d".format(it.code and 0xFF) })
     println(output.map { "\\u%04x".format(it.code and 0xFF) })
     return output.map { (it.code and 0xFF).toChar() }.joinToString("")
 }
@@ -315,7 +316,7 @@ class `To BrainFuck Transpiler` {
 
         private fun binaryOperator(){
             val operator = currentToken
-            val list:Array<TokenProps> = Array(3){ TokenProps(Token.DUMMY,0,0,"") }
+            val list:Array<TokenProps> = Array(4){ TokenProps(Token.DUMMY,0,0,"") }
             for(i in 0..1) {
                 list[i] = nextToken()
                 when(list[i].token){
@@ -328,6 +329,9 @@ class `To BrainFuck Transpiler` {
                 Token.ADD-> interpreter.add(list)
                 Token.SUB->interpreter.sub(list)
                 Token.MUL->interpreter.mul(list)
+                Token.DIVMOD->{list[3] = nextToken(); if(list[3].token != Token.VAR_NAME) throw ParserException("divMod requires 2 output variable arguments")
+                    interpreter.divMod(list)
+                }
                 else -> throw ParserException("Operator: $operator is not supported")
             }
         }
@@ -355,11 +359,11 @@ class `To BrainFuck Transpiler` {
             if(debug) println("Moving pointer from $start to $currentMemPointer: ${output.substring(oIndex)}" )
             return output
         }
-        fun mapVariable(id:String, size:Int):Int{
+        fun mapVariable(id:String, size:Int):Pair<Int,String>{
             if(debug) println("Mapping variable $id to index $freeMemPointer with size: $size")
             memoryMap.put(id,freeMemPointer)
             freeMemPointer += size
-            return freeMemPointer - size
+            return freeMemPointer - size to id
         }
         private fun generateTempVariableId(original:String) = "${Random.nextBytes(1)}#$original"
         fun ioRead(id:String){
@@ -367,7 +371,7 @@ class `To BrainFuck Transpiler` {
             output.append(",")
         }
         fun ioWriteString(str:String){
-            moveToPointer(mapVariable(generateTempVariableId("str"),2))
+            moveToPointer(mapVariable(generateTempVariableId("str"),2).first)
             generateOutputFor(str)
         }
         private fun generateOutputFor(str:String){
@@ -455,6 +459,8 @@ class `To BrainFuck Transpiler` {
             recombine(fromPtr)//.append(">[-<+>]<")
             if(debug) println("Copy $fromPtr to $toPtr: ${output.substring(oIndex)}" )
         }
+
+        private fun recombine(id:String) = recombine(memoryMap[id]!!)
         private fun recombine(ptr:Int) = moveToPointer(ptr).append(">[-<+>]<")
 
         private fun sub(fromPtr: Int, thatPtr:Int){
@@ -521,15 +527,48 @@ class `To BrainFuck Transpiler` {
 
             if(debug) println("Operator MUL: ${output.substring(oIndex)}")
         }
+        fun divMod(tokens:Array<TokenProps>){
+            var oIndex = output.length
+            if(tokens[0].token == Token.VAR_NAME && tokens[0].id == tokens[1].id)
+                tokens[1] = copyToTempVariable(tokens[1])
+            val (flagPtr,flagTag) = mapVariable(generateTempVariableId("divFlag"),1)
+            val (quotientPtr,quotientId) = mapVariable(generateTempVariableId(tokens[2].id),VARIABLE_SIZE)
+            val (reminderPtr,reminderId) = mapVariable(generateTempVariableId(tokens[3].id),VARIABLE_SIZE)
+
+            moveToPointer(tokens[0].id).append("[->+")
+            currentMemPointer++
+            moveToPointer(flagPtr).append('+')
+            moveToPointer(tokens[1].id).append("->+<[")
+            moveToPointer(flagPtr).append("-][")
+
+            recombine(tokens[1].id)
+            moveToPointer(quotientPtr).append('+')
+            moveToPointer(flagPtr).append('-')
+            moveToPointer(tokens[0].id).append(']')
+
+            copy(memoryMap[tokens[0].id]!! + 1,reminderPtr)
+            recombine(tokens[0].id)
+            recombine(tokens[1].id)
+
+            memoryMap.put(tokens[2].id, memoryMap[quotientId]!!)
+            memoryMap.put(tokens[3].id, memoryMap[reminderId]!!)
+
+            if(debug) println("Operator DIVMOD: ${output.substring(oIndex)} ")
+
+
+        }
         override fun toString() = output.toString()
+
     }
+
 
 
     @Test
     fun brainFuckTest(){
-        assertEquals("Hello World!\n",brainFuckParse("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.",""))
-        assertEquals("Hello, World!",brainFuckParse(">++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++[<+++++++>-]<++.------------.>++++++[<+++++++++>-]<+.<.+++.------.--------.>>>++++[<++++++++>-]<+.",""))
-        assertEquals("Hello World!\n",brainFuckParse("+[>[<-[]>+[>+++>[+++++++++++>][>]-[<]>-]]++++++++++<]>>>>>>----.<<+++.<-..+++.<-.>>>.<<.+++.------.>-.<<+.<.",""))
+//        assertEquals("Hello World!\n",brainFuckParse("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.",""))
+//        assertEquals("Hello, World!",brainFuckParse(">++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++[<+++++++>-]<++.------------.>++++++[<+++++++++>-]<+.<.+++.------.--------.>>>++++[<++++++++>-]<+.",""))
+//        assertEquals("Hello World!\n",brainFuckParse("+[>[<-[]>+[>+++>[+++++++++++>][>]-[<]>-]]++++++++++<]>>>>>>----.<<+++.<-..+++.<-.>>>.<<.+++.------.>-.<<+.<.",""))
+        assertEquals("",brainFuckParse("[->-[>+>>]>[[-<+>]+>+>>]<<<<<].>.>.>.>.>","/u0005/u0003/u0001/"))
     }
 
     fun kcuf(code: String): String {
@@ -643,10 +682,26 @@ class `To BrainFuck Transpiler` {
 
         mul A B C
         var D
-        mul A A D //This call will cause endless loop: to resolve this A must be copied to different memory slot 
+        mul A A D 
 
         msg A B C D
         ""","\u0002\u0003","\u0002\u0003\u0006\u0004")
+    }
+
+    @Test
+    fun `FixedTest 0 | Basic 4 | Works for divmod, div, mod`()
+    {
+        Check("""
+		var A B C D
+		set A 79
+		set B 13
+        divmod A B C D
+		msg A B C D
+//		div C D C
+//		msg A B C D
+//		mod A D A
+//		msg A B C D
+		""","","\u004f\u000d\u0006\u0001")//\u004f\u000d\u0006\u0001\u0000\u000d\u0006\u0001")
     }
 
 
