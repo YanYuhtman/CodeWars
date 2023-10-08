@@ -3,7 +3,6 @@ import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sqrt
 import kotlin.random.Random
-import kotlin.reflect.KClass
 import kotlin.test.assertEquals
 
 fun brainFuckParse(command:String, input:String):String{
@@ -237,7 +236,9 @@ class `To BrainFuck Transpiler` {
                 Token.READ -> ioRead()
                 Token.MSG -> ioWrite()
                 Token.SET,Token.INC,Token.DEC -> unaryOperator()
-                Token.ADD,Token.SUB,Token.MUL,Token.DIV,Token.MOD,Token.DIVMOD -> binaryOperator()
+                Token.ADD,Token.SUB,Token.MUL,Token.DIV,Token.MOD -> mulArgumentsOperator(3)
+                Token.DIVMOD -> mulArgumentsOperator(4)
+//                Token.B2A,Token.A2B -> a2Bb2AOperator()
 
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
@@ -306,10 +307,10 @@ class `To BrainFuck Transpiler` {
 
         }
 
-        private fun binaryOperator(){
+        private fun mulArgumentsOperator(numberOfArguments:Int = 2){
             val operator = currentToken
-            val list:Array<TokenProps> = Array(4){ TokenProps(Token.DUMMY,0,0,"") }
-            for(i in 0..1) {
+            val list:Array<TokenProps> = Array(numberOfArguments){ TokenProps(Token.DUMMY,0,0,"") }
+            for(i in 0 until list.lastIndex) {
                 list[i] = nextToken()
                 when(list[i].token){
                     Token.VAR_NAME->{}
@@ -321,14 +322,12 @@ class `To BrainFuck Transpiler` {
                     else -> throw ParserException("For binary operation argument $i token ${list[i].token} is invalid")
                 }
             }
-            list[2] = nextToken(); if(list[2].token != Token.VAR_NAME) throw ParserException("For binary operation last argument must be a VARIABLE")
+            list[list.lastIndex] = nextToken(); if(list[list.lastIndex].token != Token.VAR_NAME) throw ParserException("For ${list[list.lastIndex].token} operator last argument must be a VARIABLE")
             when(operator.token){
                 Token.ADD-> interpreter.add(list)
                 Token.SUB->interpreter.sub(list)
                 Token.MUL->interpreter.mul(list)
-                Token.DIVMOD->{list[3] = nextToken(); if(list[3].token != Token.VAR_NAME) throw ParserException("divMod requires 2 output variable arguments")
-                    interpreter.divMod(list)
-                }
+                Token.DIVMOD->interpreter.divMod(list)
                 Token.DIV->interpreter.div(list)
                 Token.MOD->interpreter.mod(list)
                 else -> throw ParserException("Operator: $operator is not supported")
@@ -551,6 +550,7 @@ class `To BrainFuck Transpiler` {
             if(debug) println("Operator DIVMOD: ${output.substring(oIndex)} ")
 
         }
+
         override fun toString() = output.toString()
 
     }
@@ -711,7 +711,7 @@ class `To BrainFuck Transpiler` {
 //		inc D 5
 //		a2b B C D A
 //		msg A B C D // A = (100 * (2 + 1) + 10 * (4 - 2) + (7 + 5)) % 256 = 76 = 0x4c
-//		""","","\u00f7\u0032\u0034\u0037\u004c\u0033\u0032\u003c")
+//		""","","\u00f7\u0032\u0034\u0037")//\u004c\u0033\u0032\u003c")
 //    }
 
 
