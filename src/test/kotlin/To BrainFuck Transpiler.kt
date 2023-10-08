@@ -50,10 +50,9 @@ const val CHAR_QUOTE = '\''
 const val STRING_QUOTE = '\"'
 val WHITESPACE_CHARS = charArrayOf(' ','\t','\r')
 const val VARIABLE_SIZE = 2
+fun generateTempVariableId(original:String) = "${Random.nextBytes(1)}#$original"
 class `To BrainFuck Transpiler` {
     //https://www.codewars.com/kata/59f9cad032b8b91e12000035
-
-
 
     enum class TokenType{
         BASIC,
@@ -107,18 +106,12 @@ class `To BrainFuck Transpiler` {
         REM(TokenType.KEYWORD, "rem"),
     }
     data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, var id:String = token.id){
-        public infix fun <B:Any> to(that: KClass<B>): B {
-            try {
-                return when (that) {
-                    Int::class -> this.id.toInt()
-                    Char::class-> this.id[0]
-                    else -> throw ParserException("Unsupported type cast $this")
-                } as B
-            }catch (e:Exception){
-                throw ParserException("Invalid casting type exception of $this")
-            }
-
+        fun toInt():Int = when(this.token){
+            Token.NUMBER -> this.id.toInt()
+            Token.CHARACTER -> this.id[0].code
+            else-> throw ParserException("Unsupported cast of ${this.token} to Int")
         }
+
     }
     class LexerException(message:String):Exception(message)
     class Lexer(private val source:String, val debug:Boolean = false){
@@ -293,16 +286,15 @@ class `To BrainFuck Transpiler` {
                 when (operator.token) {
                     Token.SET -> when (nextToken().token) {
                         Token.VAR_NAME -> interpreter.set(varId, currentToken.id)
-                        Token.NUMBER -> interpreter.set(varId, currentToken to Int::class)
-                        Token.CHARACTER -> interpreter.set(varId, currentToken to Char::class)
+                        Token.NUMBER,Token.CHARACTER -> interpreter.set(varId, currentToken.toInt())
                         else -> throw ParserException("")
                     }
                     Token.INC -> when (nextToken().token) {
-                        Token.NUMBER -> interpreter.inc(varId, currentToken to Int::class)
+                        Token.NUMBER -> interpreter.inc(varId, currentToken.toInt())
                         else -> throw ParserException("")
                     }
                     Token.DEC -> when (nextToken().token) {
-                        Token.NUMBER -> interpreter.dec(varId, currentToken to Int::class)
+                        Token.NUMBER -> interpreter.dec(varId, currentToken.toInt())
                         else -> throw ParserException("")
                     }
                     else -> {}
@@ -320,7 +312,12 @@ class `To BrainFuck Transpiler` {
             for(i in 0..1) {
                 list[i] = nextToken()
                 when(list[i].token){
-                    Token.NUMBER,Token.CHARACTER,Token.VAR_NAME -> {}
+                    Token.VAR_NAME->{}
+                    Token.NUMBER,Token.CHARACTER -> {
+                        val value = list[i].toInt()
+                        list[i] = TokenProps(Token.VAR_NAME,list[i].startPos,list[i].endPos,generateTempVariableId("bVar$i"))
+                        interpreter.set(list[i].id,value)
+                    }
                     else -> throw ParserException("For binary operation argument $i token ${list[i].token} is invalid")
                 }
             }
@@ -362,7 +359,6 @@ class `To BrainFuck Transpiler` {
             return output
         }
 
-
         fun mapVariable(id:String, size:Int, ptr:Int = freeMemPointer):Pair<Int,String>{
             if(debug) println("Mapping variable $id to index $ptr with size: $size")
             memoryMap[id] = ptr
@@ -370,7 +366,7 @@ class `To BrainFuck Transpiler` {
                 freeMemPointer = ptr + size
             return ptr to id
         }
-        private fun generateTempVariableId(original:String) = "${Random.nextBytes(1)}#$original"
+
         fun ioRead(id:String){
             moveToPointer(id)
             output.append(",")
@@ -488,8 +484,7 @@ class `To BrainFuck Transpiler` {
             for(i in 0..1)
                 when(tokens[i].token){
                     Token.VAR_NAME -> copy(memoryMap[tokens[i].id]!!,freeMemPointer)
-                    Token.NUMBER -> optimizedAddition(freeMemPointer,tokens[i] to Int::class)
-                    Token.CHARACTER -> optimizedAddition(freeMemPointer,(tokens[i] to Char::class).code)
+                    Token.NUMBER,Token.CHARACTER-> optimizedAddition(freeMemPointer,tokens[i].toInt())
                     else->throw InterpreterException("Unsupported token: ${tokens[i]} for addition")
                 }
             mapVariable(tokens[2].id,VARIABLE_SIZE)
@@ -498,13 +493,9 @@ class `To BrainFuck Transpiler` {
         fun sub(tokens:Array<TokenProps>){
             var oIndex = output.length
             when(tokens[1].token){
-                Token.NUMBER -> {
+                Token.NUMBER,Token.CHARACTER -> {
                     copy(memoryMap[tokens[0].id]!!,freeMemPointer)
-                    optimizedAddition(freeMemPointer,-(tokens[1] to Int::class))}
-                Token.CHARACTER -> {
-                    copy(memoryMap[tokens[0].id]!!,freeMemPointer)
-                    optimizedAddition(freeMemPointer,-(tokens[1] to Char::class).code)
-                }
+                    optimizedAddition(freeMemPointer,-(tokens[1].toInt()))}
                 Token.VAR_NAME -> {
                     sub(memoryMap[tokens[0].id]!!,memoryMap[tokens[1].id]!!)
                     copy(memoryMap[tokens[0].id]!!,freeMemPointer)
@@ -706,6 +697,22 @@ class `To BrainFuck Transpiler` {
 		msg A B C D
 		""","","\u004f\u000d\u0006\u0001\u004f\u000d\u0006\u0001\u0000\u000d\u0006\u0001")
     }
+
+//    @Test
+//    fun `FixedTest 0 | Basic 6 | Works for a2b, b2a`()
+//    {
+//        Check("""
+//		var A B C D
+//		set a 247
+//		b2a A B C D
+//		msg A B C D
+//		inc B 1
+//		dec C 2
+//		inc D 5
+//		a2b B C D A
+//		msg A B C D // A = (100 * (2 + 1) + 10 * (4 - 2) + (7 + 5)) % 256 = 76 = 0x4c
+//		""","","\u00f7\u0032\u0034\u0037\u004c\u0033\u0032\u003c")
+//    }
 
 
 }
