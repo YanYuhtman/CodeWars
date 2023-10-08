@@ -322,12 +322,13 @@ class `To BrainFuck Transpiler` {
                     else -> throw ParserException("For binary operation argument $i token ${list[i].token} is invalid")
                 }
             }
-            list[list.lastIndex] = nextToken(); if(list[list.lastIndex].token != Token.VAR_NAME) throw ParserException("For ${list[list.lastIndex].token} operator last argument must be a VARIABLE")
+            list[list.lastIndex] = nextToken(); if(list[list.lastIndex].token != Token.VAR_NAME) throw ParserException("For operator: $operator ${list.lastIndex} argument last argument must be a VARIABLE")
             when(operator.token){
                 Token.ADD-> interpreter.add(list)
                 Token.SUB->interpreter.sub(list)
                 Token.MUL->interpreter.mul(list)
-                Token.DIVMOD->interpreter.divMod(list)
+                Token.DIVMOD->{if(list[list.lastIndex-1].token != Token.VAR_NAME) throw ParserException("For operator: $operator ${list.lastIndex-1} argument last argument must be a VARIABLE")
+                    interpreter.divMod(list)}
                 Token.DIV->interpreter.div(list)
                 Token.MOD->interpreter.mod(list)
                 else -> throw ParserException("Operator: $operator is not supported")
