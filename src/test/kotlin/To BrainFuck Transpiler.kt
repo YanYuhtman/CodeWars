@@ -242,6 +242,7 @@ class `To BrainFuck Transpiler` {
                 Token.ADD,Token.SUB,Token.MUL,Token.DIV,Token.MOD -> mulArgumentsOperator(3)
                 Token.DIVMOD -> mulArgumentsOperator(4)
                 Token.B2A,Token.A2B -> mulArgumentsOperator(4)
+                Token.LSET,Token.LGET -> listArgumentsOperator()
 
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
@@ -258,6 +259,8 @@ class `To BrainFuck Transpiler` {
                     val size = currentToken.id.toIntOrNull()
                     if(size == null || size < 1)
                         throw ParserException("Positive number is expected $currentToken")
+                    if(nextToken().token != Token.RBRAKET)
+                        throw ParserException("${Token.LBRAKET} token expected")
                     interpreter.mapVariable(id,size*VARIABLE_SIZE)
 
                 }else
@@ -341,6 +344,17 @@ class `To BrainFuck Transpiler` {
                 }
                 else -> throw ParserException("Operator: $operator is not supported")
             }
+        }
+        private fun listArgumentsOperator(){
+            val list:Array<TokenProps> = Array(3){ TokenProps(Token.DUMMY,0,0,"")}
+            list[0] = currentToken
+            if(nextToken().token != Token.NUMBER && currentToken.token != Token.VAR_NAME)
+                throw ParserException("Expected number argument token as list index (first) for operator ${list[0]}")
+            list[1] = currentToken
+            if(list[0].token == Token.LGET && nextToken().token != Token.VAR_NAME)
+                throw ParserException("Expected variable argument token as set value (second) for operator ${list[0]}")
+            list[2] = currentToken
+            interpreter.lSetGet(list)
         }
 
 
@@ -615,6 +629,22 @@ class `To BrainFuck Transpiler` {
 
 
         }
+
+        fun lSetGet(tokens: Array<TokenProps>){
+            //TODO generate move right from argument variable
+            if(tokens[0].token == Token.LSET) {
+                moveToPointer(memoryMap[tokens[0].id]!! + tokens[1].id.toInt())
+                clear(currentMemPointer)
+                optimizedAddition(tokens[2].token.id.toInt())
+            }else{
+                if(tokens[1].token == Token.VAR_NAME){
+
+                }else {
+                    copy(memoryMap[tokens[0].id]!! + tokens[1].id.toInt(), freeMemPointer)
+                    mapVariable(tokens[2].token.id)
+                }
+            }
+        }
         override fun toString() = output.toString()
 
     }
@@ -784,6 +814,30 @@ class `To BrainFuck Transpiler` {
 		a2b B C D A
 		msg A B C D // A = (100 * (2 + 1) + 10 * (4 - 2) + (7 + 5)) % 256 = 76 = 0x4c
 		""","","\u00f7\u0032\u0034\u0037\u004c\u0033\u0032\u003c")
+    }
+
+    @Test
+    fun `FixedTest 0 | Basic 7 | Works for lset, lget`()
+    {
+        Check("""
+		var L  [ 20 ]  I X
+		lset L 10 80
+		set X 20
+		lset L 5 X
+		set X 9
+		lset L X X
+		set I 4
+		lget L I X
+		msg X
+		lget L 5 X
+		msg X
+		lget L 9 X
+		msg X
+		lget L 10 X
+		msg X
+		lget L 19 X
+		msg X
+		""","","\u0000\u0014\u0009\u0050\u0000")
     }
 
 
