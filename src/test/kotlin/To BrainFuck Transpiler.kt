@@ -105,6 +105,8 @@ class `To BrainFuck Transpiler` {
         REM(TokenType.KEYWORD, "rem"),
     }
     data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, var id:String = token.id){
+        constructor(value:Int):this(Token.NUMBER,0,0,value.toString())
+        constructor(char: Char):this(Token.CHARACTER,0,0,"$char")
         fun toInt():Int = when(this.token){
             Token.NUMBER -> this.id.toInt()
             Token.CHARACTER -> this.id[0].code
@@ -238,7 +240,7 @@ class `To BrainFuck Transpiler` {
                 Token.SET,Token.INC,Token.DEC -> unaryOperator()
                 Token.ADD,Token.SUB,Token.MUL,Token.DIV,Token.MOD -> mulArgumentsOperator(3)
                 Token.DIVMOD -> mulArgumentsOperator(4)
-//                Token.B2A,Token.A2B -> a2Bb2AOperator()
+                Token.B2A -> mulArgumentsOperator(4)
 
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
@@ -331,6 +333,11 @@ class `To BrainFuck Transpiler` {
                     interpreter.divMod(list)}
                 Token.DIV->interpreter.div(list)
                 Token.MOD->interpreter.mod(list)
+                Token.A2B,Token.B2A-> {
+                    for(i in 1 .. list.lastIndex)
+                        if(list[i].token != Token.VAR_NAME) throw ParserException("For operator: $operator ${i} argument last argument must be a VARIABLE")
+                    if(operator.token == Token.B2A) interpreter.b2a(list) else interpreter.a2b(list)
+                }
                 else -> throw ParserException("Operator: $operator is not supported")
             }
         }
@@ -359,12 +366,22 @@ class `To BrainFuck Transpiler` {
             return output
         }
 
-        fun mapVariable(id:String, size:Int, ptr:Int = freeMemPointer):Pair<Int,String>{
+        fun mapVariable(id:String, size:Int = VARIABLE_SIZE, ptr:Int = freeMemPointer):Pair<Int,String>{
             if(debug) println("Mapping variable $id to index $ptr with size: $size")
             memoryMap[id] = ptr
             if(ptr + size > freeMemPointer)
                 freeMemPointer = ptr + size
             return ptr to id
+        }
+        private fun <T:Any> mapConstant(value:T, size: Int = VARIABLE_SIZE, ptr: Int = freeMemPointer):TokenProps{
+            val token = when{
+                value is Int -> TokenProps(value as Int)
+                value is Char -> TokenProps(value as Char)
+                 else -> throw InterpreterException("Type ${value::class} is not supported for constant mapping")
+            }
+            mapVariable(value.toString(),size)
+            set(value.toString(),value);
+            return token
         }
 
         fun ioRead(id:String){
@@ -422,13 +439,20 @@ class `To BrainFuck Transpiler` {
             output.append(".")
             if (debug) println("Writing variable $id to output")
         }
-        fun set(setId:String, getId:String){
-            if(debug) println("Setting variable $setId from variable $getId")
-            clear(setId)
-            copy(memoryMap[getId]!!,memoryMap[setId]!!)
+
+
+        fun <T:Any> set(id:String,value:T){
+            if(debug) println("Setting variable $id from variable $value")
+            when{
+                value is String -> {
+                    clear(id)
+                    copy(memoryMap[value]!!,memoryMap[id]!!)
+                }
+                value is Int ->  {clear(id); inc(id,value and 0xFF) }
+                value is Char -> {clear(id) ;inc(id,value.code)}
+                else -> throw InterpreterException("Argument type ${value::class} is not supported for SET function ")
+            }
         }
-        fun set(setId: String,char: Char)  {clear(setId) ;inc(setId,char.code)}
-        fun set(setId:String, number:Int)  {clear(setId); inc(setId,number and 0xFF) }
         fun inc(id:String, number: Int){
             moveToPointer(id)
             optimizedAddition(number)
@@ -545,13 +569,30 @@ class `To BrainFuck Transpiler` {
                     mapVariable(tokens[2].id, VARIABLE_SIZE, currentMemPointer + 2)
                 }
                 1-> mapVariable(tokens[2].id, VARIABLE_SIZE, currentMemPointer + 2)
-                2-> mapVariable(tokens[2].id, VARIABLE_SIZE, currentMemPointer)
+                2-> {mapVariable(tokens[2].id, VARIABLE_SIZE, currentMemPointer); freeMemPointer+=2}
             }
 
             if(debug) println("Operator DIVMOD: ${output.substring(oIndex)} ")
 
         }
+        fun b2a(tokens: Array<TokenProps>){
+            val _10Token = mapConstant(10)
+            val _100Token = mapConstant(100)
+            val _48Token = mapConstant(48)
 
+            mod(arrayOf(tokens[0],_10Token,tokens[3]))
+            add(arrayOf(tokens[3],_48Token,tokens[3]))
+
+            div(arrayOf(tokens[0],_10Token,tokens[2]))
+            mod(arrayOf(tokens[2],_10Token,tokens[2]))
+            add(arrayOf(tokens[2],_48Token,tokens[2]))
+
+            div(arrayOf(tokens[0],_100Token,tokens[1]))
+            add(arrayOf(tokens[1],_48Token,tokens[1]))
+        }
+        fun a2b(tokens: Array<TokenProps>){
+
+        }
         override fun toString() = output.toString()
 
     }
@@ -699,21 +740,29 @@ class `To BrainFuck Transpiler` {
 		""","","\u004f\u000d\u0006\u0001\u004f\u000d\u0006\u0001\u0000\u000d\u0006\u0001")
     }
 
-//    @Test
-//    fun `FixedTest 0 | Basic 6 | Works for a2b, b2a`()
-//    {
-//        Check("""
-//		var A B C D
-//		set a 247
-//		b2a A B C D
-//		msg A B C D
+    @Test
+    fun `FixedTest 0 | test set`(){
+        Check("""
+            var a 
+            set a 247
+            msg a
+             ""","",Char(247).toString())
+    }
+    @Test
+    fun `FixedTest 0 | Basic 6 | Works for a2b, b2a`()
+    {
+        Check("""
+		var A B C D
+		set a 247
+        b2a A B C D
+		msg A B C D
 //		inc B 1
 //		dec C 2
 //		inc D 5
 //		a2b B C D A
 //		msg A B C D // A = (100 * (2 + 1) + 10 * (4 - 2) + (7 + 5)) % 256 = 76 = 0x4c
-//		""","","\u00f7\u0032\u0034\u0037")//\u004c\u0033\u0032\u003c")
-//    }
+		""","","\u00f7\u0032\u0034\u0037")//\u004c\u0033\u0032\u003c")
+    }
 
 
 }
