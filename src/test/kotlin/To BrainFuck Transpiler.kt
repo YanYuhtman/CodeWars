@@ -107,6 +107,7 @@ class `To BrainFuck Transpiler` {
     data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, var id:String = token.id){
         constructor(value:Int):this(Token.NUMBER,0,0,value.toString())
         constructor(char: Char):this(Token.CHARACTER,0,0,"$char")
+        constructor(v: String):this(Token.VAR_NAME,0,0,v)
         fun toInt():Int = when(this.token){
             Token.NUMBER -> this.id.toInt()
             Token.CHARACTER -> this.id[0].code
@@ -240,7 +241,7 @@ class `To BrainFuck Transpiler` {
                 Token.SET,Token.INC,Token.DEC -> unaryOperator()
                 Token.ADD,Token.SUB,Token.MUL,Token.DIV,Token.MOD -> mulArgumentsOperator(3)
                 Token.DIVMOD -> mulArgumentsOperator(4)
-                Token.B2A -> mulArgumentsOperator(4)
+                Token.B2A,Token.A2B -> mulArgumentsOperator(4)
 
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
@@ -379,8 +380,8 @@ class `To BrainFuck Transpiler` {
                 value is Char -> TokenProps(value as Char)
                  else -> throw InterpreterException("Type ${value::class} is not supported for constant mapping")
             }
-            mapVariable(value.toString(),size)
-            set(value.toString(),value);
+            mapVariable(value.toString(), size)
+            set(value.toString(), value)
             return token
         }
 
@@ -591,6 +592,27 @@ class `To BrainFuck Transpiler` {
             add(arrayOf(tokens[1],_48Token,tokens[1]))
         }
         fun a2b(tokens: Array<TokenProps>){
+            val _10Token = mapConstant(10)
+            val _100Token = mapConstant(100)
+            val _48Token = mapConstant(48)
+
+            val tmpTokens = mutableListOf<TokenProps>()
+            for(i in 0..2)
+                tmpTokens.add(TokenProps(mapVariable(generateTempVariableId("ta2b$i")).second))
+
+
+            sub(arrayOf(tokens[2],_48Token,tmpTokens[0]))
+
+            sub(arrayOf(tokens[1],_48Token,tmpTokens[1]))
+            mul(arrayOf(tmpTokens[1],_10Token,tmpTokens[1]))
+
+
+            sub(arrayOf(tokens[0],_48Token,tmpTokens[2]))
+            mul(arrayOf(tmpTokens[2],_100Token,tmpTokens[2]))
+
+            add(arrayOf(tmpTokens[0],tmpTokens[1],tokens[3]))
+            add(arrayOf(tokens[3],tmpTokens[2],tokens[3]))
+
 
         }
         override fun toString() = output.toString()
@@ -608,7 +630,7 @@ class `To BrainFuck Transpiler` {
     }
 
     fun kcuf(code: String): String {
-        return Parser(Lexer(code),true).interpreter.toString()
+        return Parser(Lexer(code),).interpreter.toString()
     }
     fun Check(_RawCode : String,Input : String = "",Expect : String = "",Message : String = "")
     {
@@ -756,12 +778,12 @@ class `To BrainFuck Transpiler` {
 		set a 247
         b2a A B C D
 		msg A B C D
-//		inc B 1
-//		dec C 2
-//		inc D 5
-//		a2b B C D A
-//		msg A B C D // A = (100 * (2 + 1) + 10 * (4 - 2) + (7 + 5)) % 256 = 76 = 0x4c
-		""","","\u00f7\u0032\u0034\u0037")//\u004c\u0033\u0032\u003c")
+		inc B 1
+		dec C 2
+		inc D 5
+		a2b B C D A
+		msg A B C D // A = (100 * (2 + 1) + 10 * (4 - 2) + (7 + 5)) % 256 = 76 = 0x4c
+		""","","\u00f7\u0032\u0034\u0037\u004c\u0033\u0032\u003c")
     }
 
 
