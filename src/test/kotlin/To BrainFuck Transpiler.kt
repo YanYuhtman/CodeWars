@@ -1,4 +1,5 @@
 import org.junit.jupiter.api.Test
+import java.lang.NullPointerException
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sqrt
@@ -50,6 +51,7 @@ const val STRING_QUOTE = '\"'
 val WHITESPACE_CHARS = charArrayOf(' ','\t','\r')
 const val VARIABLE_SIZE = 2
 fun generateTempVariableId(original:String) = "${Random.nextBytes(1)}#$original"
+const val ARRAY_OP_SIZE = 10
 class `To BrainFuck Transpiler` {
     //https://www.codewars.com/kata/59f9cad032b8b91e12000035
 
@@ -261,7 +263,7 @@ class `To BrainFuck Transpiler` {
                         throw ParserException("Positive number is expected $currentToken")
                     if(nextToken().token != Token.RBRAKET)
                         throw ParserException("${Token.LBRAKET} token expected")
-                    interpreter.mapVariable(id,size*VARIABLE_SIZE)
+                    interpreter.mapVariable(id,ARRAY_OP_SIZE + size * VARIABLE_SIZE + 2)
 
                 }else
                     interpreter.mapVariable(id,VARIABLE_SIZE)
@@ -346,14 +348,19 @@ class `To BrainFuck Transpiler` {
             }
         }
         private fun listArgumentsOperator(){
-            val list:Array<TokenProps> = Array(3){ TokenProps(Token.DUMMY,0,0,"")}
+            val list:Array<TokenProps> = Array(4){ TokenProps(Token.DUMMY,0,0,"")}
             list[0] = currentToken
-            if(nextToken().token != Token.NUMBER && currentToken.token != Token.VAR_NAME)
+            list[1] = nextToken()
+            if(currentToken.token != Token.VAR_NAME)
+                throw ParserException("Expected argument for variable name ${list[0]}")
+
+            list[2] = nextToken()
+            if( list[2].token != Token.NUMBER && currentToken.token != Token.VAR_NAME)
                 throw ParserException("Expected number argument token as list index (first) for operator ${list[0]}")
-            list[1] = currentToken
-            if(list[0].token == Token.LGET && nextToken().token != Token.VAR_NAME)
+
+            list[3] = nextToken()
+            if(list[0].token == Token.LGET && list[3].token != Token.VAR_NAME)
                 throw ParserException("Expected variable argument token as set value (second) for operator ${list[0]}")
-            list[2] = currentToken
             interpreter.lSetGet(list)
         }
 
@@ -431,13 +438,16 @@ class `To BrainFuck Transpiler` {
             if(debug) println("Generated string output for $str: ${output.substring(ouIndex)}")
 
         }
-        private fun optimizedAddition(pointer:Int, aValue: Int) {moveToPointer(pointer);optimizedAddition(aValue)}
-        private fun optimizedAddition(aValue:Int){
-            if(aValue == 0) return
+        private fun addition(pointer:Int, aValue: Int, optimized:Boolean = true) {moveToPointer(pointer);addition(aValue,optimized)
+        }
+        private fun addition(aValue:Int, optimized:Boolean = true,output: StringBuilder? = this.output):String{
+            if(aValue == 0) return ""
+
+            val output = if(output == null) StringBuilder() else output
             val oIndex = output.length
             val symbol = if (aValue > 0) '+' else '-'
             val add = abs(aValue)
-            if(add > 4) {
+            if(optimized && add > 4) {
                 val mult = floor(sqrt(abs(add).toDouble())).toInt()
                 val reminder = if (mult == 0) add else add % (mult * mult)
                 output.append('>').append(CharArray(mult) { '+' }).append("[<")
@@ -447,6 +457,7 @@ class `To BrainFuck Transpiler` {
                 output.append(CharArray(add) { symbol })
 
             if(debug) println("Optimized addition of $aValue : ${output.substring(oIndex)}")
+            return output.toString()
 
         }
         fun ioWriteVariable(id:String){
@@ -470,7 +481,7 @@ class `To BrainFuck Transpiler` {
         }
         fun inc(id:String, number: Int){
             moveToPointer(id)
-            optimizedAddition(number)
+            addition(number)
         }
         private fun clear(id:String) = mapVariable(id,VARIABLE_SIZE)//clear(memoryMap[id]!!)
 
@@ -523,7 +534,7 @@ class `To BrainFuck Transpiler` {
             for(i in 0..1)
                 when(tokens[i].token){
                     Token.VAR_NAME -> copy(memoryMap[tokens[i].id]!!,freeMemPointer)
-                    Token.NUMBER,Token.CHARACTER-> optimizedAddition(freeMemPointer,tokens[i].toInt())
+                    Token.NUMBER,Token.CHARACTER-> addition(freeMemPointer,tokens[i].toInt())
                     else->throw InterpreterException("Unsupported token: ${tokens[i]} for addition")
                 }
             mapVariable(tokens[2].id,VARIABLE_SIZE)
@@ -534,7 +545,8 @@ class `To BrainFuck Transpiler` {
             when(tokens[1].token){
                 Token.NUMBER,Token.CHARACTER -> {
                     copy(memoryMap[tokens[0].id]!!,freeMemPointer)
-                    optimizedAddition(freeMemPointer,-(tokens[1].toInt()))}
+                    addition(freeMemPointer,-(tokens[1].toInt()))
+                }
                 Token.VAR_NAME -> {
                     sub(memoryMap[tokens[0].id]!!,memoryMap[tokens[1].id]!!)
                     copy(memoryMap[tokens[0].id]!!,freeMemPointer)
@@ -630,19 +642,76 @@ class `To BrainFuck Transpiler` {
 
         }
 
-        fun lSetGet(tokens: Array<TokenProps>){
-            //TODO generate move right from argument variable
-            if(tokens[0].token == Token.LSET) {
-                moveToPointer(memoryMap[tokens[0].id]!! + tokens[1].id.toInt())
-                clear(currentMemPointer)
-                optimizedAddition(tokens[2].token.id.toInt())
-            }else{
-                if(tokens[1].token == Token.VAR_NAME){
+        private fun setListValue(listPrt:Int, index:Any, value:Any){
+            //I = 2: flag/i t i0 = 9 i1 = 11(etc) //size = 10 + i * 2 + 1
+            when(index){
+                is Int -> addition(listPrt + 2, index, true)
+                is TokenProps -> copy(memoryMap[index.id]!!,listPrt + 2)
+            }
+            when(value){
+                is Int -> addition(listPrt + 4,value, true)
+                is TokenProps -> copy(memoryMap[value.id]!!, listPrt + 4)
+            }
+            moveToPointer(listPrt + 4)
+//            >>I+  i + flag = 1
+//            >>++++ value = 4
+            output.append("""
+                [<<[-<<+>>>>>>>>+<<<<<<]<<[->>+<<]>>>>  
+                >>>>i+[-[+>>]+[<<]>>-]>>[[-]>>]
+                <+>
+                +[<<[>>-]>>[-<<+>>]<<]<< 
+                -] 
+                <<[-]<<
+            """.trimIndent())
+            currentMemPointer = listPrt
+        }
+        private fun getListValue(listPtr:Int, index:Any, outValue:TokenProps){
+            when (index) {
+                is Int -> addition(listPtr + 2, index, true)
+                is TokenProps -> copy(memoryMap[index.id]!!, listPtr + 2)
+            }
 
-                }else {
-                    copy(memoryMap[tokens[0].id]!! + tokens[1].id.toInt(), freeMemPointer)
-                    mapVariable(tokens[2].token.id)
+            output.append('+')
+            //result at cell 1
+//            >>+I+ //flag plus index at cell 2
+            output.append("""
+                [[-<<+>>>>>>>>+<<<<<<]<<[->>+<<]>>>> //copy index 
+                >>>>i[-[+>>]+[<<]>>-]>>[[-]>>]
+                <[-<
+                +[<<[>>-]>>[-<<+>>]<<]<<
+                <+>>]<]
+                +[<<[>>-]>>[-<<+>>]<<]<<[-]<< //move back to flag and clear
+
+            """.trimIndent())
+            currentMemPointer = listPtr
+            copy(listPtr + 1, memoryMap[outValue.id]!!)
+        }
+
+        fun lSetGet(tokens: Array<TokenProps>){
+            if(tokens[0].token == Token.LSET) {
+                when(tokens[2].token) {
+                    Token.NUMBER-> {
+                        when(tokens[3].token) {
+                            Token.NUMBER-> {
+                                moveToPointer(memoryMap[tokens[1].id]!! + ARRAY_OP_SIZE + tokens[2].id.toInt()*VARIABLE_SIZE - 1)
+                                clear(currentMemPointer)
+                                addition(tokens[3].id.toInt())
+                            }
+                            Token.VAR_NAME-> setListValue(memoryMap[tokens[1].id]!!,tokens[2].id.toInt(),tokens[3])
+                            else ->{throw InterpreterException("Unexpected third token ${tokens[1]}")}
+                        }
+                    }
+                    Token.VAR_NAME->setListValue(memoryMap[tokens[1].id]!!, when(tokens[2].token){ Token.NUMBER->tokens[2].id.toInt() else-> tokens[2] },
+                            when(tokens[3].token){ Token.NUMBER->tokens[3].id.toInt() else-> tokens[3] } )
+                    else -> throw InterpreterException("Unexpected second token ${tokens[1]}")
                 }
+
+            }else{
+                if(tokens[2].token == Token.VAR_NAME)
+                    getListValue(memoryMap[tokens[1].id]!!,tokens[2],tokens[3])
+                else
+                    getListValue(memoryMap[tokens[1].id]!!,tokens[2].id.toInt(),tokens[3])
+
             }
         }
         override fun toString() = output.toString()
@@ -820,7 +889,7 @@ class `To BrainFuck Transpiler` {
     fun `FixedTest 0 | Basic 7 | Works for lset, lget`()
     {
         Check("""
-		var L  [ 20 ]  I X
+	    var L  [ 20 ]  I X
 		lset L 10 80
 		set X 20
 		lset L 5 X
