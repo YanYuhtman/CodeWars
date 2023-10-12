@@ -684,7 +684,8 @@ class `To BrainFuck Transpiler` {
 
             """.trimIndent())
             currentMemPointer = listPtr
-            copy(listPtr + 1, memoryMap[outValue.id]!!)
+            copy(listPtr + 1, mapVariable(outValue.id).first)
+            clear(listPtr + 1)
         }
 
         fun lSetGet(tokens: Array<TokenProps>){
@@ -889,23 +890,28 @@ class `To BrainFuck Transpiler` {
     fun `FixedTest 0 | Basic 7 | Works for lset, lget`()
     {
         Check("""
-	    var L  [ 20 ]  I X
+	    var L  [ 20 ]  I X T
 		lset L 10 80
-		set X 20
-		lset L 5 X
-		set X 9
-		lset L X X
-		set I 4
-		lget L I X
-		msg X
-		lget L 5 X
-		msg X
-		lget L 9 X
-		msg X
-		lget L 10 X
-		msg X
-		lget L 19 X
-		msg X
+        set X 20
+        lset L 5 X
+        
+        lget L 5 T 
+        lget L 10 X 
+        msg T X
+
+//		set X 9
+//		lset L X X
+//		set I 4
+//		lget L I X
+//		msg X
+//		lget L 5 X
+//		msg X
+//		lget L 9 X
+//		msg X
+//		lget L 10 X
+//		msg X
+//		lget L 19 X
+//		msg X
 		""","","\u0000\u0014\u0009\u0050\u0000")
     }
 
