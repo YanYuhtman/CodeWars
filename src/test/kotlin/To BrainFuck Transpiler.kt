@@ -1,5 +1,6 @@
 import org.junit.jupiter.api.Test
 import java.lang.NullPointerException
+import java.util.Stack
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sqrt
@@ -145,9 +146,9 @@ class `To BrainFuck Transpiler` {
 
         private fun peek() = if(curIndex + 1 >= source.length) EOT else source[curIndex + 1]
 
-        private fun skipWhiteSpaces() = run { while (isWhiteSpace(curChar)) nextChar() }
+        private fun skipWhiteSpaces() { while (isWhiteSpace(curChar)) nextChar() }
 
-        private fun skipComment() = run {if(curChar == '/' && peek() == '/' || curChar == '-' && peek() == '-' || curChar == '#' || source.substring(curIndex).startsWith("rem")) while (nextChar() != EOL && curChar != EOT);}
+        private fun skipComment() {if(curChar == '/' && peek() == '/' || curChar == '-' && peek() == '-' || curChar == '#' || source.substring(curIndex).startsWith("rem")) while (nextChar() != EOL && curChar != EOT);}
 
         private fun skipCommentsAndWhiteSpaces(){skipWhiteSpaces();skipComment();skipWhiteSpaces()}
 
@@ -176,7 +177,7 @@ class `To BrainFuck Transpiler` {
                         while (nextCharOrThrow("String resolution failed", EOL, EOT) != STRING_QUOTE);
                         token = TokenProps(Token.STRING, startPos + 1, curIndex, source.substring(startPos+1,curIndex))
                     }
-                    peek() in (WHITESPACE_CHARS + EOL + '/' + '-' + '#' + EOT)-> {
+                    peek() in (WHITESPACE_CHARS + EOL + '/' + '-' + '#' + EOT + ']')-> {
                         val endPos = curIndex + 1
                         val declaration = source.substring(startPos,endPos)
                         Token.values().forEach {
@@ -211,26 +212,39 @@ class `To BrainFuck Transpiler` {
     class Parser(val lexer:Lexer, debug: Boolean = false){
         private var currentTokenIndex:Int = -1
         private var currentToken:TokenProps = TokenProps(Token.EOL,0,0)
+        private var programTokens:MutableMap<TokenProps,TokenProps> = mutableMapOf()
 
         val interpreter = Interpreter(debug)
 
+        private fun mapProgramTokens():TokenProps{
+            val blockStack:Stack<TokenProps> = Stack<TokenProps>().apply { push(currentToken) }
+            while (currentToken.token != Token.EOT)
+                when(nextToken().token){
+                    Token.IFEQ,Token.IFNEQ,Token.WNEQ,Token.PROC -> blockStack.push(currentToken)
+                    Token.END -> programTokens[blockStack.pop()] = currentToken
+                    else -> {}
+                }
+            programTokens.put(blockStack.peek(),currentToken)
+            setTokenIndex(0)
+            return programTokens[blockStack.pop()]!!
+        }
         init {
             if(lexer.tokens.isEmpty() || lexer.tokens.last().token != Token.EOT)
                 throw ParserException("There is no tokens for parsing")
             nextSignificantToken()
-            program()
+            program(mapProgramTokens())
         }
 
+        private fun setTokenIndex(tokenIndex:Int){currentTokenIndex = tokenIndex; currentToken = lexer.tokens[currentTokenIndex] }
         private fun nextToken():TokenProps = let{currentToken = if(currentToken.token == Token.EOT) currentToken else lexer.tokens[++currentTokenIndex];currentToken}
         private fun nextSignificantToken() = run { while (nextToken().token == Token.EOL);}
 
         private fun isEndOfStatement(token:Token = currentToken.token) = token == Token.EOL || token == Token.EOT
         private fun peekToken():TokenProps = lexer.tokens[currentTokenIndex + 1]
 
-        private fun program(){
-            while (currentToken.token != Token.EOT)
+        private fun program(endToken:TokenProps){
+            while (currentToken != endToken)
                 statement()
-
         }
         private fun statement(){
             if(currentToken.token.type != TokenType.KEYWORD && currentToken.token.type != TokenType.OPERATOR && currentToken.token != Token.EOL)
@@ -245,6 +259,7 @@ class `To BrainFuck Transpiler` {
                 Token.DIVMOD -> mulArgumentsOperator(4)
                 Token.B2A,Token.A2B -> mulArgumentsOperator(4)
                 Token.LSET,Token.LGET -> listArgumentsOperator()
+                Token.WNEQ -> whileNEQ()
 
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
@@ -363,6 +378,16 @@ class `To BrainFuck Transpiler` {
             if(list[0].token == Token.LGET && list[3].token != Token.VAR_NAME)
                 throw ParserException("Expected variable argument token as set value (second) for operator ${list[0]}")
             interpreter.lSetGet(list)
+        }
+
+        private fun whileNEQ(){
+           val (flagPtr,flagName) = interpreter.mapVariable(generateTempVariableId(currentToken.token.id),1)
+           val tokens:Array<TokenProps> = arrayOf(currentToken,nextToken(),nextToken())
+           if(tokens[1].token != Token.VAR_NAME || tokens[2].token != Token.VAR_NAME || tokens[2].token != Token.NUMBER)
+               throw ParserException("Not supported argument for ${tokens[0].token} token")
+           interpreter.whileNEQ(arrayOf(currentToken,tokens[1],tokens[2], TokenProps(flagName)))
+           program(programTokens[tokens[0]]!!)
+           interpreter.whileNEQ(arrayOf(currentToken,tokens[1],tokens[2],TokenProps(flagName)));
         }
 
 
@@ -667,6 +692,19 @@ class `To BrainFuck Transpiler` {
             currentMemPointer = freeMemPointer + 5
             mapVariable(tokens[2].id,VARIABLE_SIZE,currentMemPointer)
         }
+        fun whileNEQ(tokens:Array<TokenProps>){
+          when(tokens[0].token){
+              Token.WNEQ -> {
+                  cmp(tokens.copyOfRange(1,tokens.size))
+                  moveToPointer(tokens.last().id).append("[")
+              }
+              Token.END -> {
+                  cmp(tokens.copyOfRange(1,tokens.size))
+                  moveToPointer(tokens.last().id).append("]")
+              }
+              else-> throw InterpreterException("Illegal token ${tokens[0].token} for WNEQ loop")
+          }
+        }
 
 
         private fun setListValue(listPrt:Int, index:Any, value:Any){
@@ -953,6 +991,45 @@ class `To BrainFuck Transpiler` {
             cmp ONE SIX R
             msg R
             """, "", "\u0001\u00ff\u0000\u00ff")
+    }
+
+    @Test
+    fun `FixedTest 0 | Basic 8 | Works for ifeq, ifneq, wneq`()
+    {
+        Check("""
+		var F L [5] X
+		set F 0
+		add 10 10 X
+		wneq F 5
+			lset L F X
+			inc F 1
+			dec X 1
+		end
+		//L == [20,19,18,17,16]
+
+//		wneq F 0
+//			inc F -1
+//			lget L F X
+//			msg X
+//		end
+//
+//		set F 10
+//		wneq F 0
+//			ifeq F 10
+//				set F 5
+//			end
+//			dec F 1
+//			lget L F X
+//			ifneq X 18
+//				msg F X
+//			end
+//		end
+//		ifeq F 0
+//			ifneq X 50
+//				msg ";-)"
+//			end
+//		end
+		""","","\u0010\u0011\u0012\u0013\u0014\u0004\u0010\u0003\u0011\u0001\u0013\u0000\u0014;-)")
     }
 
 
