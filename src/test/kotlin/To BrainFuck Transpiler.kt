@@ -383,9 +383,10 @@ class `To BrainFuck Transpiler` {
         private fun whileNEQ(){
            val (flagPtr,flagName) = interpreter.mapVariable(generateTempVariableId(currentToken.token.id),1)
            val tokens:Array<TokenProps> = arrayOf(currentToken,nextToken(),nextToken())
-           if(tokens[1].token != Token.VAR_NAME || tokens[2].token != Token.VAR_NAME || tokens[2].token != Token.NUMBER)
+           if(tokens[1].token != Token.VAR_NAME || (tokens[2].token != Token.VAR_NAME && tokens[2].token != Token.NUMBER))
                throw ParserException("Not supported argument for ${tokens[0].token} token")
-           interpreter.whileNEQ(arrayOf(currentToken,tokens[1],tokens[2], TokenProps(flagName)))
+           interpreter.whileNEQ(arrayOf(tokens[0],tokens[1],tokens[2], TokenProps(flagName)))
+           nextSignificantToken()
            program(programTokens[tokens[0]]!!)
            interpreter.whileNEQ(arrayOf(currentToken,tokens[1],tokens[2],TokenProps(flagName)));
         }
@@ -699,6 +700,7 @@ class `To BrainFuck Transpiler` {
                   moveToPointer(tokens.last().id).append("[")
               }
               Token.END -> {
+                  //TODO: WON'T WORK MUST BE MAPPED TO THE SAME CELL
                   cmp(tokens.copyOfRange(1,tokens.size))
                   moveToPointer(tokens.last().id).append("]")
               }
@@ -795,7 +797,7 @@ class `To BrainFuck Transpiler` {
     }
 
     fun kcuf(code: String): String {
-        return Parser(Lexer(code),).interpreter.toString()
+        return Parser(Lexer(code),true).interpreter.toString()
     }
     fun Check(_RawCode : String,Input : String = "",Expect : String = "",Message : String = "")
     {
@@ -1001,6 +1003,7 @@ class `To BrainFuck Transpiler` {
 		set F 0
 		add 10 10 X
 		wneq F 5
+            msg F X 
 			lset L F X
 			inc F 1
 			dec X 1
