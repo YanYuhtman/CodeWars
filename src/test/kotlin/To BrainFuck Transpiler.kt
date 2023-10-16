@@ -241,7 +241,7 @@ class `To BrainFuck Transpiler` {
                 Token.READ -> ioRead()
                 Token.MSG -> ioWrite()
                 Token.SET,Token.INC,Token.DEC -> unaryOperator()
-                Token.ADD,Token.SUB,Token.MUL,Token.DIV,Token.MOD -> mulArgumentsOperator(3)
+                Token.ADD,Token.SUB,Token.MUL,Token.DIV,Token.MOD,Token.CMP -> mulArgumentsOperator(3)
                 Token.DIVMOD -> mulArgumentsOperator(4)
                 Token.B2A,Token.A2B -> mulArgumentsOperator(4)
                 Token.LSET,Token.LGET -> listArgumentsOperator()
@@ -339,6 +339,7 @@ class `To BrainFuck Transpiler` {
                     interpreter.divMod(list)}
                 Token.DIV->interpreter.div(list)
                 Token.MOD->interpreter.mod(list)
+                Token.CMP->interpreter.cmp(list)
                 Token.A2B,Token.B2A-> {
                     for(i in 1 .. list.lastIndex)
                         if(list[i].token != Token.VAR_NAME) throw ParserException("For operator: $operator ${i} argument last argument must be a VARIABLE")
@@ -642,6 +643,32 @@ class `To BrainFuck Transpiler` {
 
         }
 
+        private fun setCmpValue(token:TokenProps,toPtr:Int,){
+            when(token.token){
+                Token.VAR_NAME -> copy(memoryMap[token.id]!!,toPtr)
+                Token.NUMBER -> addition(toPtr,token.toInt())
+                else -> throw InterpreterException("Token type ${token.token} for argument of ${Token.CMP} is not supported")
+            }
+        }
+        fun cmp(tokens: Array<TokenProps>){
+            setCmpValue(tokens[0],freeMemPointer)
+            setCmpValue(tokens[1],freeMemPointer+1)
+            moveToPointer(freeMemPointer)
+            //sign(x,y) a[0] = x, a[1] = y (single cell value) a[5] = R
+            //init at x
+            output.append( """
+                    x[ >>temp0+
+                       <y[- >temp0[-] >temp1+ <<y]
+                   >temp0[- >>z+ <<temp0]
+                   >temp1[- <<y+ >>temp1]
+                   <<y- <x- ]
+                >y[>>>>R-<[z->R++<]tmp1<<<[-]]>>>>
+            """.trimIndent())
+            currentMemPointer = freeMemPointer + 5
+            mapVariable(tokens[2].id,VARIABLE_SIZE,currentMemPointer)
+        }
+
+
         private fun setListValue(listPrt:Int, index:Any, value:Any){
             //I = 2: flag/i t i0 = 9 i1 = 11(etc) //size = 10 + i * 2 + 1
             when(index){
@@ -908,6 +935,24 @@ class `To BrainFuck Transpiler` {
 		lget L 19 X
 		msg X
 		""","","\u0000\u0014\u0009\u0050\u0000")
+    }
+
+    @Test
+    fun `FixedTest 0 cmp`()
+    {
+        Check("""
+            var R ONE SIX
+            set ONE 1
+            set SIX 6 
+            cmp 2 1 R
+            msg R
+            cmp 2 5 R 
+            msg R 
+            cmp 6 6 R
+            msg R 
+            cmp ONE SIX R
+            msg R
+            """, "", "\u0001\u00ff\u0000\u00ff")
     }
 
 
