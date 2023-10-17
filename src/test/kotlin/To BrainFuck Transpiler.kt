@@ -761,7 +761,10 @@ class `To BrainFuck Transpiler` {
 
             """.trimIndent())
             currentMemPointer = listPtr
-            copy(listPtr + 1, mapVariable(outValue.id).first)
+
+            clear(memoryMap[outValue.id]!!)
+            copy(listPtr + 1,memoryMap[outValue.id]!!)
+
             clear(listPtr + 1)
             if(debug) println("Getting list $listPtr value with arguments [$index, $outValue ]: ${output.substring(oIndex)}")
         }
