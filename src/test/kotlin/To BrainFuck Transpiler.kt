@@ -51,6 +51,7 @@ const val CHAR_QUOTE = '\''
 const val STRING_QUOTE = '\"'
 val WHITESPACE_CHARS = charArrayOf(' ','\t','\r')
 const val VARIABLE_SIZE = 2
+const val CMP_SIZE = 6
 fun generateTempVariableId(original:String) = "${Random.nextBytes(1)}#$original"
 const val ARRAY_OP_SIZE = 10
 class `To BrainFuck Transpiler` {
@@ -381,7 +382,7 @@ class `To BrainFuck Transpiler` {
         }
 
         private fun whileNEQ(){
-           val (flagPtr,flagName) = interpreter.mapVariable(generateTempVariableId(currentToken.token.id),1)
+           val (flagPtr,flagName) = interpreter.mapVariable(generateTempVariableId(currentToken.token.id),CMP_SIZE)
            val tokens:Array<TokenProps> = arrayOf(currentToken,nextToken(),nextToken())
            if(tokens[1].token != Token.VAR_NAME || (tokens[2].token != Token.VAR_NAME && tokens[2].token != Token.NUMBER))
                throw ParserException("Not supported argument for ${tokens[0].token} token")
@@ -416,7 +417,7 @@ class `To BrainFuck Transpiler` {
         }
 
         fun mapVariable(id:String, size:Int = VARIABLE_SIZE, ptr:Int = freeMemPointer):Pair<Int,String>{
-            if(debug) println("Mapping variable $id to index $ptr with size: $size")
+            if(debug) println("Mapping token $id to index $ptr with size: $size")
             memoryMap[id] = ptr
             if(ptr + size > freeMemPointer)
                 freeMemPointer = ptr + size
@@ -676,40 +677,47 @@ class `To BrainFuck Transpiler` {
                 else -> throw InterpreterException("Token type ${token.token} for argument of ${Token.CMP} is not supported")
             }
         }
-        fun cmp(tokens: Array<TokenProps>){
-            setCmpValue(tokens[0],freeMemPointer)
-            setCmpValue(tokens[1],freeMemPointer+1)
-            moveToPointer(freeMemPointer)
+        fun cmp(tokens: Array<TokenProps>, ptr: Int = freeMemPointer, remap:Boolean = true){
+            var oIndex = output.length
+            setCmpValue(tokens[0],ptr)
+            setCmpValue(tokens[1],ptr+1)
+            moveToPointer(ptr)
             //sign(x,y) a[0] = x, a[1] = y (single cell value) a[5] = R
             //init at x
             output.append( """
-                    x[ >>temp0+
-                       <y[- >temp0[-] >temp1+ <<y]
-                   >temp0[- >>z+ <<temp0]
-                   >temp1[- <<y+ >>temp1]
+                
+                   >>>>>R[-]<<<<<
+                   x[ >>temp0+
+                        <y[- >temp0[-] >temp1+ <<y]
+                        >temp0[- >>z+ <<temp0]
+                        >temp1[- <<y+ >>temp1]
                    <<y- <x- ]
                 >y[>>>>R-<[z->R++<]tmp1<<<[-]]>>>>
             """.trimIndent())
-            currentMemPointer = freeMemPointer + 5
-            mapVariable(tokens[2].id,VARIABLE_SIZE,currentMemPointer)
+            currentMemPointer = ptr + CMP_SIZE - 1
+            if(remap)
+                mapVariable(tokens[2].id,VARIABLE_SIZE,currentMemPointer)
+            if(debug) println("Compare of [${tokens.map { it.id }.joinToString(",")}]: ${output.substring(oIndex)}")
         }
         fun whileNEQ(tokens:Array<TokenProps>){
+          var oIndex = output.length
           when(tokens[0].token){
               Token.WNEQ -> {
-                  cmp(tokens.copyOfRange(1,tokens.size))
-                  moveToPointer(tokens.last().id).append("[")
+                  cmp(tokens.copyOfRange(1,tokens.size), ptr = memoryMap[tokens.last().id]!!, remap = false)
+                  output.append("[")
               }
               Token.END -> {
-                  //TODO: WON'T WORK MUST BE MAPPED TO THE SAME CELL
-                  cmp(tokens.copyOfRange(1,tokens.size))
-                  moveToPointer(tokens.last().id).append("]")
+                  cmp(tokens.copyOfRange(1,tokens.size), ptr = memoryMap[tokens.last().id]!!, remap = false)
+                  output.append("]")
               }
               else-> throw InterpreterException("Illegal token ${tokens[0].token} for WNEQ loop")
           }
+          if(debug) println("While not EQ of[${tokens.map { it.id }.joinToString(",")}]: ${output.substring(oIndex)}")
         }
 
 
         private fun setListValue(listPrt:Int, index:Any, value:Any){
+            var oIndex = output.length
             //I = 2: flag/i t i0 = 9 i1 = 11(etc) //size = 10 + i * 2 + 1
             when(index){
                 is Int -> addition(listPrt + 2, index, true)
@@ -731,8 +739,10 @@ class `To BrainFuck Transpiler` {
                 <<[-]<<
             """.trimIndent())
             currentMemPointer = listPrt
+            if(debug) println("Setting list $listPrt value with arguments [$index, $value ]: ${output.substring(oIndex)}")
         }
         private fun getListValue(listPtr:Int, index:Any, outValue:TokenProps){
+            var oIndex = output.length
             when (index) {
                 is Int -> addition(listPtr + 2, index, true)
                 is TokenProps -> {copy(memoryMap[index.id]!!, listPtr + 2); moveToPointer(listPtr + 2)}
@@ -753,6 +763,7 @@ class `To BrainFuck Transpiler` {
             currentMemPointer = listPtr
             copy(listPtr + 1, mapVariable(outValue.id).first)
             clear(listPtr + 1)
+            if(debug) println("Getting list $listPtr value with arguments [$index, $outValue ]: ${output.substring(oIndex)}")
         }
 
         fun lSetGet(tokens: Array<TokenProps>){
@@ -1003,18 +1014,17 @@ class `To BrainFuck Transpiler` {
 		set F 0
 		add 10 10 X
 		wneq F 5
-            msg F X 
-			lset L F X
+            lset L F X
 			inc F 1
 			dec X 1
 		end
-		//L == [20,19,18,17,16]
+        //L == [20,19,18,17,16]
 
-//		wneq F 0
-//			inc F -1
-//			lget L F X
-//			msg X
-//		end
+		wneq F 0
+			inc F -1
+			lget L F X
+			msg X
+		end
 //
 //		set F 10
 //		wneq F 0
