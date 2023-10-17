@@ -1,5 +1,4 @@
 import org.junit.jupiter.api.Test
-import java.lang.NullPointerException
 import java.util.Stack
 import kotlin.math.abs
 import kotlin.math.floor
@@ -56,7 +55,6 @@ fun generateTempVariableId(original:String) = "${Random.nextBytes(1)}#$original"
 const val ARRAY_OP_SIZE = 10
 class `To BrainFuck Transpiler` {
     //https://www.codewars.com/kata/59f9cad032b8b91e12000035
-
     enum class TokenType{
         BASIC,
         ID,
@@ -260,7 +258,8 @@ class `To BrainFuck Transpiler` {
                 Token.DIVMOD -> mulArgumentsOperator(4)
                 Token.B2A,Token.A2B -> mulArgumentsOperator(4)
                 Token.LSET,Token.LGET -> listArgumentsOperator()
-                Token.WNEQ -> whileNEQ()
+                Token.WNEQ -> conditionStatement (interpreter::whileNEQ)
+                Token.IFEQ, Token.IFNEQ -> conditionStatement (interpreter::_if)
 
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
@@ -382,17 +381,17 @@ class `To BrainFuck Transpiler` {
             interpreter.lSetGet(list)
         }
 
-        private fun whileNEQ(){
-           val (flagPtr,flagName) = interpreter.mapVariable(generateTempVariableId(currentToken.token.id),CMP_SIZE)
-           val tokens:Array<TokenProps> = arrayOf(currentToken,nextToken(),nextToken())
-           if(tokens[1].token != Token.VAR_NAME || (tokens[2].token != Token.VAR_NAME && tokens[2].token != Token.NUMBER))
-               throw ParserException("Not supported argument for ${tokens[0].token} token")
-           interpreter.whileNEQ(arrayOf(tokens[0],tokens[1],tokens[2], TokenProps(flagName)))
-           nextSignificantToken()
-           program(programTokens[tokens[0]]!!)
-           interpreter.whileNEQ(arrayOf(currentToken,tokens[1],tokens[2],TokenProps(flagName)));
-        }
 
+        private fun conditionStatement(statement:(tokens: Array<TokenProps>)->Unit){
+            val (flagPtr,flagName) = interpreter.mapVariable(generateTempVariableId(currentToken.token.id),CMP_SIZE)
+            val tokens:Array<TokenProps> = arrayOf(currentToken,nextToken(),nextToken())
+            if(tokens[1].token != Token.VAR_NAME || (tokens[2].token != Token.VAR_NAME && tokens[2].token != Token.NUMBER))
+                throw ParserException("Not supported argument for ${tokens[0].token} token")
+            statement(arrayOf(tokens[0],tokens[1],tokens[2], TokenProps(flagName)))
+            nextSignificantToken()
+            program(programTokens[tokens[0]]!!)
+            statement(arrayOf(currentToken,tokens[1],tokens[2], TokenProps(flagName)))
+        }
 
     }
     class InterpreterException(message:String):Exception(message)
@@ -716,7 +715,12 @@ class `To BrainFuck Transpiler` {
           if(debug) println("While not EQ of[${tokens.map { it.id }.joinToString(",")}]: ${output.substring(oIndex)}")
         }
 
-
+        fun _if(tokens:Array<TokenProps>){
+//
+//            when(tokens[0].token){
+//                Token.IFEQ
+//            }
+        }
         private fun setListValue(listPrt:Int, index:Any, value:Any){
             var oIndex = output.length
             //I = 2: flag/i t i0 = 9 i1 = 11(etc) //size = 10 + i * 2 + 1
