@@ -1057,16 +1057,17 @@ class `To BrainFuck Transpiler` {
     @Test
     fun `FixedTest 0 | Basic 8 | Works for ifeq, ifneq, wneq`()
     {
+        //TODO: lget L F X called twice (lget need to be changed to preserve values)
         Check("""
-		var F L [5] X
+		var F L[5] X
 		set F 0
 		add 10 10 X
 		wneq F 5
-            lset L F X
+			lset L F X
 			inc F 1
 			dec X 1
 		end
-        //L == [20,19,18,17,16]
+		//L == [20,19,18,17,16]
 
 		wneq F 0
 			inc F -1
@@ -1075,21 +1076,21 @@ class `To BrainFuck Transpiler` {
 		end
 
 		set F 10
-//		wneq F 0
-//			ifeq F 10
-//				set F 5
-//			end
-//			dec F 1
-//			lget L F X
-//			ifneq X 18
-//				msg F X
-//			end
-//		end
-//		ifeq F 0
-//			ifneq X 50
-//				msg ";-)"
-//			end
-//		end
+		wneq F 0
+			ifeq F 10
+				set F 5
+			end
+			dec F 1
+			lget L F X
+			ifneq X 18
+				msg F X
+			end
+		end
+		ifeq F 0
+			ifneq X 50
+				msg ";-)"
+			end
+		end
 		""","","\u0010\u0011\u0012\u0013\u0014\u0004\u0010\u0003\u0011\u0001\u0013\u0000\u0014;-)")
     }
 
