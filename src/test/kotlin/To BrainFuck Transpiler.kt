@@ -259,7 +259,8 @@ class `To BrainFuck Transpiler` {
                 Token.B2A,Token.A2B -> mulArgumentsOperator(4)
                 Token.LSET,Token.LGET -> listArgumentsOperator()
                 Token.WNEQ -> conditionStatement (interpreter::whileNEQ)
-                Token.IFEQ, Token.IFNEQ -> conditionStatement (interpreter::_if)
+                Token.IFEQ -> conditionStatement (interpreter::_ifEQ)
+                Token.IFNEQ -> conditionStatement (interpreter::_ifNEQ)
 
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
@@ -383,7 +384,7 @@ class `To BrainFuck Transpiler` {
 
 
         private fun conditionStatement(statement:(tokens: Array<TokenProps>)->Unit){
-            val (flagPtr,flagName) = interpreter.mapVariable(generateTempVariableId(currentToken.token.id),CMP_SIZE)
+            val (flagPtr,flagName) = interpreter.mapVariable(generateTempVariableId(currentToken.token.id),CMP_SIZE+1)
             val tokens:Array<TokenProps> = arrayOf(currentToken,nextToken(),nextToken())
             if(tokens[1].token != Token.VAR_NAME || (tokens[2].token != Token.VAR_NAME && tokens[2].token != Token.NUMBER))
                 throw ParserException("Not supported argument for ${tokens[0].token} token")
@@ -715,12 +716,24 @@ class `To BrainFuck Transpiler` {
           if(debug) println("While not EQ of[${tokens.map { it.id }.joinToString(",")}]: ${output.substring(oIndex)}")
         }
 
-        fun _if(tokens:Array<TokenProps>){
-//
-//            when(tokens[0].token){
-//                Token.IFEQ
-//            }
+        private fun _if(tokens:Array<TokenProps>, eq: Boolean){
+            when(tokens[0].token){
+                Token.IFEQ,Token.IFNEQ->{
+                    cmp(tokens.copyOfRange(1,tokens.size), ptr = memoryMap[tokens.last().id]!!, remap = false)
+                    if(eq) output.append("""
+                        
+                        x[<temp0+>x[-]]+
+                        <temp0[>x-<temp0-]
+                        >
+                    """.trimIndent())
+                    output.append("[")
+                }
+                Token.END-> {moveToPointer(memoryMap[tokens.last().id]!! + CMP_SIZE - 1).append("[-]]")}
+                else-> throw InterpreterException("Statement token ${tokens[0].token} is not supported")
+            }
         }
+        fun _ifEQ(tokens:Array<TokenProps>) = _if(tokens,true)
+        fun _ifNEQ(tokens:Array<TokenProps>) = _if(tokens,false)
         private fun setListValue(listPrt:Int, index:Any, value:Any){
             var oIndex = output.length
             //I = 2: flag/i t i0 = 9 i1 = 11(etc) //size = 10 + i * 2 + 1
@@ -1019,6 +1032,28 @@ class `To BrainFuck Transpiler` {
             """, "", "\u0001\u00ff\u0000\u00ff")
     }
 
+    @Test
+    fun `FixedTest 0 | Basic 8 | Works for ifeq, ifneq`(){
+        Check("""
+            var C V
+            set c 10
+            set v -1
+            ifeq c 10
+                msg c
+            end
+            ifeq c v
+                msg c
+            end
+
+            ifneq c 0
+                msg c
+            end
+          
+            ifneq c v
+                msg v
+            end
+            ""","","\u000a\u000a\u00FF")
+    }
     @Test
     fun `FixedTest 0 | Basic 8 | Works for ifeq, ifneq, wneq`()
     {
