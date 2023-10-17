@@ -750,6 +750,7 @@ class `To BrainFuck Transpiler` {
             }
 
             output.append('+')
+            //TODO: the lget method clears L[i]. To fix this significant change is needed ... if this functionality needed
             //result at cell 1
 //            >>+I+ //flag plus index at cell 2
             output.append("""
@@ -765,8 +766,8 @@ class `To BrainFuck Transpiler` {
 
             clear(memoryMap[outValue.id]!!)
             copy(listPtr + 1,memoryMap[outValue.id]!!)
-
             clear(listPtr + 1)
+
             if(debug) println("Getting list $listPtr value with arguments [$index, $outValue ]: ${output.substring(oIndex)}")
         }
 
@@ -989,7 +990,11 @@ class `To BrainFuck Transpiler` {
 		msg X
 		lget L 19 X
 		msg X
-		""","","\u0000\u0014\u0009\u0050\u0000")
+        
+        #Remove comments if clear L[i] while lget fix needed  
+//      lget L 5 X
+//		msg X
+		""","","\u0000\u0014\u0009\u0050\u0000")//\u0014")
     }
 
     @Test
@@ -1010,7 +1015,7 @@ class `To BrainFuck Transpiler` {
             """, "", "\u0001\u00ff\u0000\u00ff")
     }
 
-//    @Test
+    @Test
     fun `FixedTest 0 | Basic 8 | Works for ifeq, ifneq, wneq`()
     {
         Check("""
@@ -1029,8 +1034,8 @@ class `To BrainFuck Transpiler` {
 			lget L F X
 			msg X
 		end
-//
-//		set F 10
+
+		set F 10
 //		wneq F 0
 //			ifeq F 10
 //				set F 5
