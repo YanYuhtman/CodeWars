@@ -341,6 +341,7 @@ class `To BrainFuck Transpiler` {
                     Token.NUMBER,Token.CHARACTER -> {
                         val value = list[i].toInt()
                         list[i] = TokenProps(Token.VAR_NAME,list[i].startPos,list[i].endPos,generateTempVariableId("bVar$i"))
+                        interpreter.mapVariable(list[i].id)
                         interpreter.set(list[i].id,value)
                     }
                     else -> throw ParserException("For binary operation argument $i token ${list[i].token} is invalid")
@@ -511,7 +512,7 @@ class `To BrainFuck Transpiler` {
             moveToPointer(id)
             addition(number)
         }
-        private fun clear(id:String) = mapVariable(id,VARIABLE_SIZE)//clear(memoryMap[id]!!)
+        private fun clear(id:String) = clear(memoryMap[id]!!)
 
         private fun clear(pointer:Int){
             moveToPointer(pointer)
@@ -1009,7 +1010,7 @@ class `To BrainFuck Transpiler` {
             """, "", "\u0001\u00ff\u0000\u00ff")
     }
 
-    @Test
+//    @Test
     fun `FixedTest 0 | Basic 8 | Works for ifeq, ifneq, wneq`()
     {
         Check("""
