@@ -212,6 +212,7 @@ class `To BrainFuck Transpiler` {
         private var currentTokenIndex:Int = -1
         private var currentToken:TokenProps = TokenProps(Token.EOL,0,0)
         private var programTokens:MutableMap<TokenProps,TokenProps> = mutableMapOf()
+        private var procDeclarations:MutableMap<String,TokenProps> = mutableMapOf()
 
         val interpreter = Interpreter(debug)
 
@@ -219,7 +220,14 @@ class `To BrainFuck Transpiler` {
             val blockStack:Stack<TokenProps> = Stack<TokenProps>().apply { push(currentToken) }
             while (currentToken.token != Token.EOT)
                 when(nextToken().token){
-                    Token.IFEQ,Token.IFNEQ,Token.WNEQ,Token.PROC -> blockStack.push(currentToken)
+                    Token.IFEQ,Token.IFNEQ,Token.WNEQ -> blockStack.push(currentToken)
+                    Token.PROC -> {
+                        blockStack.push(currentToken)
+                        val procToken = currentToken
+                        procDeclarations.putIfAbsent(nextToken().id,procToken)?.let {
+                            throw ParserException("Procedure name ${currentToken.id} for token: $procToken must be unique")
+                        }
+                    }
                     Token.END -> programTokens[blockStack.pop()] = currentToken
                     else -> {}
                 }
@@ -233,7 +241,7 @@ class `To BrainFuck Transpiler` {
             nextSignificantToken()
             program(mapProgramTokens())
         }
-
+        private fun nextToken(token:TokenProps){ lexer.tokens.forEachIndexed {index, tokenProps -> if(token === tokenProps) setTokenIndex(index) }}
         private fun setTokenIndex(tokenIndex:Int){currentTokenIndex = tokenIndex; currentToken = lexer.tokens[currentTokenIndex] }
         private fun nextToken():TokenProps = let{currentToken = if(currentToken.token == Token.EOT) currentToken else lexer.tokens[++currentTokenIndex];currentToken}
         private fun nextSignificantToken() = run { while (nextToken().token == Token.EOL);}
@@ -261,6 +269,8 @@ class `To BrainFuck Transpiler` {
                 Token.WNEQ -> conditionStatement (interpreter::whileNEQ)
                 Token.IFEQ -> conditionStatement (interpreter::_ifEQ)
                 Token.IFNEQ -> conditionStatement (interpreter::_ifNEQ)
+                Token.PROC -> nextToken(programTokens[currentToken]!!)
+                Token.CALL -> callProc()
 
                 else -> {}//throw  ParserException("Misplaced token: $currentToken")
             }
@@ -394,13 +404,51 @@ class `To BrainFuck Transpiler` {
             statement(arrayOf(currentToken,tokens[1],tokens[2], TokenProps(flagName)))
         }
 
+        private fun collectProcVars():MutableList<TokenProps>{
+            var params = mutableListOf<TokenProps>()
+            while (nextToken().token !in arrayOf(Token.EOL,Token.EOT)){
+                if(currentToken.token != Token.VAR_NAME)
+                    throw ParserException("Calling procedure supports only ${Token.VAR_NAME}, got: ${currentToken.token} ")
+                params.add(currentToken)
+            }
+            return params
+        }
+        private fun callProc(){
+            val procName = nextToken().id
+            val params = collectProcVars()
+            val backPoint = currentToken
+
+            nextToken(procDeclarations[procName]!!)
+            nextToken() //skip proc name
+            val arguments = collectProcVars()
+
+            if(params.size != arguments.size) throw ParserException("Inconsistent argument count for call $procName")
+
+            interpreter.pushMemoryStack()
+            for(i in params.indices)
+                interpreter.mapVariableAlias(arguments[i].id,params[i])
+            program(programTokens[procDeclarations[procName]!!]!!)
+
+            interpreter.popMemoryStack()
+            nextToken(backPoint)
+        }
     }
     class InterpreterException(message:String):Exception(message)
     class Interpreter(val debug:Boolean = false){
-        private val memoryMap:MutableMap<String,Int> = mutableMapOf()
+        object memoryMap{
+            lateinit var it:Interpreter
+            operator fun get(id:String):Int? = it.memoryStack.fold(-1) { acc, mutableMap -> mutableMap[id] ?: acc }
+            operator fun set(id:String,ptr:Int) { it.memoryStack[0][id] = ptr }
+
+            fun remove(id:String) {it.memoryStack[0].remove(id)}
+        }
+
+        private val memoryStack:Stack<MutableMap<String,Int>> = Stack()
         private var freeMemPointer = 0
         private var currentMemPointer = 0
         private val output:StringBuilder = StringBuilder()
+
+        init { memoryMap.it = this; this.memoryStack.push(mutableMapOf()) }
 
         private fun moveToPointer(id:String) = moveToPointer(memoryMap[id] ?: throw InterpreterException("Variable id: $id is not mapped in memory"))
         private fun moveToPointer(pointer:Int):StringBuilder{
@@ -424,6 +472,9 @@ class `To BrainFuck Transpiler` {
                 freeMemPointer = ptr + size
             return ptr to id
         }
+        fun mapVariableAlias(id:String,token:TokenProps) {memoryStack.peek()[id] = memoryMap[token.id]!!}
+        fun pushMemoryStack() = memoryStack.push(mutableMapOf())
+        fun popMemoryStack() = memoryStack.pop()
         private fun <T:Any> mapConstant(value:T, size: Int = VARIABLE_SIZE, ptr: Int = freeMemPointer):TokenProps{
             val token = when{
                 value is Int -> TokenProps(value as Int)
@@ -838,7 +889,7 @@ class `To BrainFuck Transpiler` {
     }
 
     fun kcuf(code: String): String {
-        return Parser(Lexer(code),true).interpreter.toString()
+        return Parser(Lexer(code),).interpreter.toString()
     }
     fun Check(_RawCode : String,Input : String = "",Expect : String = "",Message : String = "")
     {
@@ -1110,20 +1161,20 @@ class `To BrainFuck Transpiler` {
 		set B 'V'
 
 		msg"Outer Before : "A B"\n"
-//		call swap B A
+		call swap B A
 		msg"Outer After : "A B"\n"
 
-//		proc swap x y
-//			msg "Inner Before : "x y"\n"
-//			set T x
-//			call say T
-//			set x y
-//			set y T
-//			msg "Inner After : "x y"\n"
-//		end
-//		proc say x
-//			msg "It is " x " now\n"
-//		end
+		proc swap x y
+			msg "Inner Before : "x y"\n"
+			set T x
+			call say T
+			set x y
+			set y T
+			msg "Inner After : "x y"\n"
+		end
+		proc say x
+			msg "It is " x " now\n"
+		end
 		""","","Outer Before : UV\n" +
                 "Inner Before : VU\n" +
                 "It is V now\n" +
