@@ -176,7 +176,7 @@ class `To BrainFuck Transpiler` {
                         while (nextCharOrThrow("String resolution failed", EOL, EOT) != STRING_QUOTE);
                         token = TokenProps(Token.STRING, startPos + 1, curIndex, source.substring(startPos+1,curIndex))
                     }
-                    peek() in (WHITESPACE_CHARS + EOL + '/' + '-' + '#' + EOT + '[' +']')-> {
+                    peek() in (WHITESPACE_CHARS + EOL + '/' + '-' + '#' + EOT + '[' +']' + '"' + '\'')-> {
                         val endPos = curIndex + 1
                         val declaration = source.substring(startPos,endPos)
                         Token.values().forEach {
@@ -446,12 +446,20 @@ class `To BrainFuck Transpiler` {
         private fun generateOutputFor(str:String){
             var currentMemCelValue = 0
             val ouIndex = output.length
-            str.forEach {
-                if(currentMemCelValue == it.code)
+            var prevChar = '\u0000'
+            str.forEach lbl@{
+                if(it == '\\' && prevChar != '\\') {
+                    prevChar = it
+                    return@lbl
+                }
+                val ch = if (prevChar == '\\') { when(it){'n'->'\n'; 'r'->'\r'; 't'->'\t' ;else->it}} else it
+                prevChar = ch
+
+                if(currentMemCelValue == ch.code)
                     output.append(".")
                 else {
-                    val (sign, symbol) = if (it.code >= currentMemCelValue) (1 to '+') else (-1 to '-')
-                    val delta = abs(it.code - currentMemCelValue)
+                    val (sign, symbol) = if (ch.code >= currentMemCelValue) (1 to '+') else (-1 to '-')
+                    val delta = abs(ch.code - currentMemCelValue)
                     if(delta > 4) {
                         val mult = floor(sqrt(abs(delta).toDouble())).toInt()
                         val reminder = if (mult == 0) delta else delta % (mult * mult)
@@ -461,7 +469,7 @@ class `To BrainFuck Transpiler` {
                     }else
                         output.append(CharArray(delta) { symbol })
                     output.append('.')
-                    currentMemCelValue = it.code
+                    currentMemCelValue = ch.code
                 }
             }
             if(debug) println("Generated string output for $str: ${output.substring(ouIndex)}")
@@ -1092,6 +1100,38 @@ class `To BrainFuck Transpiler` {
 		end
 		""","","\u0010\u0011\u0012\u0013\u0014\u0004\u0010\u0003\u0011\u0001\u0013\u0000\u0014;-)")
     }
+
+    @Test
+    fun `FixedTest 0 | Basic 9 | Works for proc`()
+    {
+        Check("""
+		var A B T
+		set A 'U'
+		set B 'V'
+
+		msg"Outer Before : "A B"\n"
+//		call swap B A
+		msg"Outer After : "A B"\n"
+
+//		proc swap x y
+//			msg "Inner Before : "x y"\n"
+//			set T x
+//			call say T
+//			set x y
+//			set y T
+//			msg "Inner After : "x y"\n"
+//		end
+//		proc say x
+//			msg "It is " x " now\n"
+//		end
+		""","","Outer Before : UV\n" +
+                "Inner Before : VU\n" +
+                "It is V now\n" +
+                "Inner After : UV\n" +
+                "Outer After : VU\n")
+    }
+
+
 
 
 }
