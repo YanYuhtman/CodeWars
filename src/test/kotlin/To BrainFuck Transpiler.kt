@@ -812,7 +812,7 @@ class `To BrainFuck Transpiler` {
                     getListValue(memoryMap[tokens[1].id]!!,tokens[2],tokens[3])
                 else
                     getListValue(memoryMap[tokens[1].id]!!,tokens[2].id.toInt(),tokens[3])
-
+                lSetGet(arrayOf(TokenProps(Token.LSET,0,0,Token.LSET.id),tokens[1],tokens[2],tokens[3]))
             }
         }
         override fun toString() = output.toString()
@@ -1008,10 +1008,9 @@ class `To BrainFuck Transpiler` {
 		lget L 19 X
 		msg X
         
-        #Remove comments if clear L[i] while lget fix needed  
-//      lget L 5 X
-//		msg X
-		""","","\u0000\u0014\u0009\u0050\u0000")//\u0014")
+        lget L 5 X
+		msg X
+		""","","\u0000\u0014\u0009\u0050\u0000\u0014")
     }
 
     @Test
