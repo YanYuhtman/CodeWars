@@ -1,6 +1,7 @@
 import org.junit.jupiter.api.Test
 import java.util.Stack
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.sqrt
 import kotlin.random.Random
@@ -513,7 +514,7 @@ class `To BrainFuck Transpiler` {
                     val delta = abs(ch.code - currentMemCelValue)
                     if(delta > 4) {
                         val mult = floor(sqrt(abs(delta).toDouble())).toInt()
-                        val reminder = if (mult == 0) delta else delta % (mult * mult)
+                        val reminder = if (mult == 0) delta else delta - (mult * mult)
                         output.append('>').append(CharArray(mult) { '+' }).append("[<")
                             .append(CharArray(mult) { symbol }).append(">-]<")
                             .append(CharArray(reminder) { symbol })
@@ -905,11 +906,12 @@ class `To BrainFuck Transpiler` {
     fun parserTest(){
 
         Check("""
+        msg  "It is V now\n"
 		var X//This is a comment
 		read X--This is also a comment
 		msg "BByeeg" X#No doubt it is a comment
 		rem &&Some comment~!@#$":<
-		""","?","BByeeg?")
+		""","?","It is V now\nBByeeg?")
 
     }
     @Test
