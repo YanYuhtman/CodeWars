@@ -176,7 +176,7 @@ class `To BrainFuck Transpiler` {
                         while (nextCharOrThrow("String resolution failed", EOL, EOT) != STRING_QUOTE);
                         token = TokenProps(Token.STRING, startPos + 1, curIndex, source.substring(startPos+1,curIndex))
                     }
-                    peek() in (WHITESPACE_CHARS + EOL + '/' + '-' + '#' + EOT + ']')-> {
+                    peek() in (WHITESPACE_CHARS + EOL + '/' + '-' + '#' + EOT + '[' +']')-> {
                         val endPos = curIndex + 1
                         val declaration = source.substring(startPos,endPos)
                         Token.values().forEach {
