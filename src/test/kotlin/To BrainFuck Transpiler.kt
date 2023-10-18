@@ -1,11 +1,12 @@
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import java.util.Stack
 import kotlin.math.abs
-import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.sqrt
 import kotlin.random.Random
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 
 fun brainFuckParse(command:String, input:String):String{
     println("Executing BrainFuck for code: $command and input: $input")
@@ -40,9 +41,9 @@ fun brainFuckParse(command:String, input:String):String{
             }
         }
     }
-    println(output.map { "%04d".format(it.code and 0xFF) })
-    println(output.map { "\\u%04x".format(it.code and 0xFF) })
-    return output.map { (it.code and 0xFF).toChar() }.joinToString("")
+    println(output.map { "%04d".format(it.toInt() and 0xFF) })
+    println(output.map { "\\u%04x".format(it.toInt() and 0xFF) })
+    return output.map { (it.toInt() and 0xFF).toChar() }.joinToString("")
 }
 
 const val EOT = '\u0004'
@@ -55,14 +56,14 @@ const val CMP_SIZE = 6
 fun generateTempVariableId(original:String) = "${Random.nextBytes(1)}#$original"
 const val ARRAY_OP_SIZE = 10
 class `To BrainFuck Transpiler` {
-    //https://www.codewars.com/kata/59f9cad032b8b91e12000035
+    //https://www.toInt()wars.com/kata/59f9cad032b8b91e12000035
     enum class TokenType{
         BASIC,
         ID,
         KEYWORD,
         OPERATOR,
     }
-    enum class Token(val type:TokenType, val id:String){
+    enum class Token(val type:TokenType, var id:String){
         DUMMY(TokenType.BASIC, ""),
         EOT(TokenType.BASIC, "$EOT"),
         EOL(TokenType.BASIC, "$EOL"),
@@ -113,7 +114,7 @@ class `To BrainFuck Transpiler` {
         constructor(v: String):this(Token.VAR_NAME,0,0,v)
         fun toInt():Int = when(this.token){
             Token.NUMBER -> this.id.toInt()
-            Token.CHARACTER -> this.id[0].code
+            Token.CHARACTER -> this.id[0].toInt()
             else-> throw ParserException("Unsupported cast of ${this.token} to Int")
         }
 
@@ -192,7 +193,7 @@ class `To BrainFuck Transpiler` {
                             else {
                                 if (!declaration.matches("[_\$A-Za-z]+\\d*".toRegex()))
                                     throw LexerException("Declaration: $declaration at [$startPos,$endPos] does not match variable pattern")
-                                TokenProps(Token.VAR_NAME, startPos, endPos, declaration.uppercase())
+                                TokenProps(Token.VAR_NAME, startPos, endPos, declaration.toUpperCase())
                             }
                         }
                     }
@@ -290,10 +291,10 @@ class `To BrainFuck Transpiler` {
                         throw ParserException("Positive number is expected $currentToken")
                     if(nextToken().token != Token.RBRAKET)
                         throw ParserException("${Token.LBRAKET} token expected")
-                    interpreter.mapVariable(id,ARRAY_OP_SIZE + size * VARIABLE_SIZE + 2)
+                    interpreter.initVariable(id,ARRAY_OP_SIZE + size * VARIABLE_SIZE + 2)
 
                 }else
-                    interpreter.mapVariable(id,VARIABLE_SIZE)
+                    interpreter.initVariable(id,VARIABLE_SIZE)
             }
         }
         private fun ioRead(){
@@ -466,6 +467,10 @@ class `To BrainFuck Transpiler` {
             return output
         }
 
+        fun initVariable(id:String, size:Int = VARIABLE_SIZE) {
+            if(memoryStack[0].contains(id)) throw InterpreterException("Duplicate venerable init")
+            mapVariable(id,size)
+        }
         fun mapVariable(id:String, size:Int = VARIABLE_SIZE, ptr:Int = freeMemPointer):Pair<Int,String>{
             if(debug) println("Mapping token $id to index $ptr with size: $size")
             memoryMap[id] = ptr
@@ -507,11 +512,11 @@ class `To BrainFuck Transpiler` {
                 val ch = if (prevChar == '\\') { when(it){'n'->'\n'; 'r'->'\r'; 't'->'\t' ;else->it}} else it
                 prevChar = ch
 
-                if(currentMemCelValue == ch.code)
+                if(currentMemCelValue == ch.toInt())
                     output.append(".")
                 else {
-                    val (sign, symbol) = if (ch.code >= currentMemCelValue) (1 to '+') else (-1 to '-')
-                    val delta = abs(ch.code - currentMemCelValue)
+                    val (sign, symbol) = if (ch.toInt() >= currentMemCelValue) (1 to '+') else (-1 to '-')
+                    val delta = abs(ch.toInt() - currentMemCelValue)
                     if(delta > 4) {
                         val mult = floor(sqrt(abs(delta).toDouble())).toInt()
                         val reminder = if (mult == 0) delta else delta - (mult * mult)
@@ -521,7 +526,7 @@ class `To BrainFuck Transpiler` {
                     }else
                         output.append(CharArray(delta) { symbol })
                     output.append('.')
-                    currentMemCelValue = ch.code
+                    currentMemCelValue = ch.toInt()
                 }
             }
             if(debug) println("Generated string output for $str: ${output.substring(ouIndex)}")
@@ -564,7 +569,7 @@ class `To BrainFuck Transpiler` {
                     copy(memoryMap[value]!!,memoryMap[id]!!)
                 }
                 value is Int ->  {clear(id); inc(id,value and 0xFF) }
-                value is Char -> {clear(id) ;inc(id,value.code)}
+                value is Char -> {clear(id) ;inc(id,value.toInt())}
                 else -> throw InterpreterException("Argument type ${value::class} is not supported for SET function ")
             }
         }
@@ -731,7 +736,7 @@ class `To BrainFuck Transpiler` {
 
         }
 
-        private fun setCmpValue(token:TokenProps,toPtr:Int,){
+        private fun setCmpValue(token:TokenProps,toPtr:Int){
             when(token.token){
                 Token.VAR_NAME -> copy(memoryMap[token.id]!!,toPtr)
                 Token.NUMBER -> addition(toPtr,token.toInt())
@@ -890,7 +895,7 @@ class `To BrainFuck Transpiler` {
     }
 
     fun kcuf(code: String): String {
-        return Parser(Lexer(code),).interpreter.toString()
+        return Parser(Lexer(code)).interpreter.toString()
     }
     fun Check(_RawCode : String,Input : String = "",Expect : String = "",Message : String = "")
     {
@@ -1184,7 +1189,44 @@ class `To BrainFuck Transpiler` {
                 "Outer After : VU\n")
     }
 
+    @Test
+    fun `FixedTest 1 | Invalid 03 | Duplicate var names`()
+    {
+        assertFails("Duplicated var names") {
+            Check(
+                """
+                var Q
+                var q[20]
+                """, "", ""
+            )
+        }
+    }
 
+    @Test
+    fun `FixedTest 1 | Invalid 07 | Expect a variable but got a list`()
+    {
+        assertFails("Expect a variable but got a list")
+        {
+            Check(
+                """
+                    var L[40] X[20]
+                    LSet L 0 X
+                    """, "", ""
+            )
+        }
+    }
+    @Test
+    fun `FixedTest 1 | Invalid 08 | Expect a list but got a variable`()
+    {
+        assertFails("Expect a list but got a variable") {
+            Check(
+                """
+                var L X
+                LGet L 0 X
+                """, "", ""
+            )
+        }
+    }
 
 
 }
