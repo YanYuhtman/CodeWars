@@ -70,7 +70,6 @@ class `To BrainFuck Transpiler` {
         VAR_NAME(TokenType.ID, ""),
         STRING(TokenType.BASIC, ""),
         CHARACTER(TokenType.BASIC, ""),
-//        DIGIT(TokenType.BASIC, ""),
         NUMBER(TokenType.BASIC, ""),
 
         LBRAKET(TokenType.KEYWORD, "["),
@@ -108,6 +107,7 @@ class `To BrainFuck Transpiler` {
 
         REM(TokenType.KEYWORD, "rem"),
     }
+    enum class VarType{ PARAM, LIST, PROCEDURE}
     data class TokenProps(val token:Token, val startPos:Int, val endPos:Int=startPos, var id:String = token.id){
         constructor(value:Int):this(Token.NUMBER,0,0,value.toString())
         constructor(char: Char):this(Token.CHARACTER,0,0,"$char")
@@ -149,7 +149,7 @@ class `To BrainFuck Transpiler` {
 
         private fun skipWhiteSpaces() { while (isWhiteSpace(curChar)) nextChar() }
 
-        private fun skipComment() {if(curChar == '/' && peek() == '/' || curChar == '-' && peek() == '-' || curChar == '#' || source.substring(curIndex).startsWith("rem")) while (nextChar() != EOL && curChar != EOT);}
+        private fun skipComment() {if(curChar == '/' && peek() == '/' || curChar == '-' && peek() == '-' || curChar == '#' || source.substring(curIndex).startsWith("rem", true)) while (nextChar() != EOL && curChar != EOT);}
 
         private fun skipCommentsAndWhiteSpaces(){skipWhiteSpaces();skipComment();skipWhiteSpaces()}
 
@@ -191,7 +191,7 @@ class `To BrainFuck Transpiler` {
                             token = if(declaration.matches("-?\\d+".toRegex()))
                                 TokenProps(Token.NUMBER,startPos,curIndex,declaration)
                             else {
-                                if (!declaration.matches("[_\$A-Za-z]+\\d*".toRegex()))
+                                if (!declaration.matches("[_\$A-Za-z]+[_\$A-Za-z\\d]*".toRegex()))
                                     throw LexerException("Declaration: $declaration at [$startPos,$endPos] does not match variable pattern")
                                 TokenProps(Token.VAR_NAME, startPos, endPos, declaration.toUpperCase())
                             }
@@ -208,13 +208,14 @@ class `To BrainFuck Transpiler` {
         }
     }
 
-
+    enum class VariableType{ UNKNOWN, PARAM, LIST, PROC_NAME  }
     class ParserException(message:String):Exception(message)
     class Parser(val lexer:Lexer, debug: Boolean = false){
         private var currentTokenIndex:Int = -1
         private var currentToken:TokenProps = TokenProps(Token.EOL,0,0)
         private var programTokens:MutableMap<TokenProps,TokenProps> = mutableMapOf()
         private var procDeclarations:MutableMap<String,TokenProps> = mutableMapOf()
+        private var declaredVariables:MutableMap<String,VarType> = mutableMapOf()
 
         val interpreter = Interpreter(debug)
 
@@ -229,6 +230,7 @@ class `To BrainFuck Transpiler` {
                         procDeclarations.putIfAbsent(nextToken().id,procToken)?.let {
                             throw ParserException("Procedure name ${currentToken.id} for token: $procToken must be unique")
                         }
+                        declaredVariables[currentToken.id] = VarType.PROCEDURE
                     }
                     Token.END -> programTokens[blockStack.pop()] = currentToken
                     else -> {}
@@ -284,6 +286,7 @@ class `To BrainFuck Transpiler` {
                 if(currentToken.token != Token.VAR_NAME)
                     throw ParserException("Declaration variable name expected instead of: $currentToken")
                 val id = currentToken.id
+                declaredVariables.putIfAbsent(id,VarType.PARAM)?.let { throw ParserException("Duplicated variable $id declaration") }
                 if(peekToken().token == Token.LBRAKET){
                     nextToken();nextToken()
                     val size = currentToken.id.toIntOrNull()
@@ -292,7 +295,7 @@ class `To BrainFuck Transpiler` {
                     if(nextToken().token != Token.RBRAKET)
                         throw ParserException("${Token.LBRAKET} token expected")
                     interpreter.initVariable(id,ARRAY_OP_SIZE + size * VARIABLE_SIZE + 2)
-
+                    declaredVariables[id] = VarType.LIST
                 }else
                     interpreter.initVariable(id,VARIABLE_SIZE)
             }
@@ -381,7 +384,7 @@ class `To BrainFuck Transpiler` {
             val list:Array<TokenProps> = Array(4){ TokenProps(Token.DUMMY,0,0,"")}
             list[0] = currentToken
             list[1] = nextToken()
-            if(currentToken.token != Token.VAR_NAME)
+            if(currentToken.token != Token.VAR_NAME || declaredVariables[currentToken.id]!! != VarType.LIST)
                 throw ParserException("Expected argument for variable name ${list[0]}")
 
             list[2] = nextToken()
@@ -391,6 +394,8 @@ class `To BrainFuck Transpiler` {
             list[3] = nextToken()
             if(list[0].token == Token.LGET && list[3].token != Token.VAR_NAME)
                 throw ParserException("Expected variable argument token as set value (second) for operator ${list[0]}")
+            if(list[3].token == Token.VAR_NAME && declaredVariables[list[3].id]!! != VarType.PARAM)
+                throw ParserException("Expected variable of type ${VarType.PARAM} instead of ${declaredVariables[list[3].id]!!}")
             interpreter.lSetGet(list)
         }
 
