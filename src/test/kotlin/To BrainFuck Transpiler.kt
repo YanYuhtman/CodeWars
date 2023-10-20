@@ -539,8 +539,7 @@ class `To BrainFuck Transpiler` {
             if(debug) println("Generated string output for $str: ${output.substring(ouIndex)}")
 
         }
-        private fun addition(pointer:Int, aValue: Int, optimized:Boolean = true) {moveToPointer(pointer);addition(aValue,optimized)
-        }
+        private fun addition(pointer:Int, aValue: Int, optimized:Boolean = true) {moveToPointer(pointer);addition(aValue,optimized) }
         private fun addition(aValue:Int, optimized:Boolean = true,output: StringBuilder? = this.output):String{
             if(aValue == 0) return ""
 
@@ -845,7 +844,7 @@ class `To BrainFuck Transpiler` {
         private fun getListValue(listPtr:Int, index:Any, outValue:TokenProps){
             var oIndex = output.length
             when (index) {
-                is Int -> addition(listPtr + 2, index, true)
+                is Int -> {addition(listPtr + 2, index, true)}
                 is TokenProps -> {copy(memoryMap[index.id]!!, listPtr + 2); moveToPointer(listPtr + 2)}
             }
 
@@ -1303,5 +1302,60 @@ class `To BrainFuck Transpiler` {
         )
     }
 
+    @Test
+    fun `Random test 2`() {
+        Check("""
+           vAR wyh8E2ygclicos2HQZBM8XW9dALkjT    [       21        ]         Hp9pxvwdL6fjNb3LUGoPYtLH4C9T cpIX__kAn44HKmQvvAh46QRB6AzhcSYNmyOf9
+            sET hp9pxVWDL6FjnB3lUGOPYtLH4c9T 21
+            Wneq HP9PXvwDL6fJNb3LUgOPYTLH4C9t 0
+                Dec Hp9PXvWDl6FjNb3LUGoPYtLH4c9T 1
+                Read cpix__KaN44hkmQvVah46qRb6azhcSyNMYOF9
+                LsET Wyh8E2ygcLICoS2HqZBm8Xw9DAlKjt hp9pxVwDl6Fjnb3luGoPyTLH4C9t cpiX__kan44hkMQVVah46QRb6aZHCSynmYof9
+            End
+            lGET wyh8E2yGCLICos2hqzBm8Xw9dALkJT 8 cpiX__kan44HkmqvVAH46qRB6AZhcSyNMyOf9
+            MSg cPiX__KaN44hkmqVVAH46qrB6aZhCsynMYOf9
+            LgET WyH8E2ygcliCOs2HQzbm8xW9DALKJT 19 cpix__kAN44hkMqvvAH46QRB6AZhcSyNMyoF9
+            mSg CPIx__KAn44hkmqVVah46qrb6aZHCSYNmYof9
+            lgEt wYh8e2YgcLICOS2HQzBM8XW9dalKjt 18 CPix__kan44hkMqVVaH46qrb6AzhCSYnMYOf9
+            msG CpiX__kan44HKmQVvAh46Qrb6aZHcsYnMYOf9
+            lgEt wYH8e2ygcLiCOs2HqZBm8xW9dalkJT 20 cPIX__kaN44HKmQVVAH46QrB6aZhCSYNmYOf9
+            mSg Cpix__kaN44HkmQvVaH46qRB6AZhCsYNMyOf9
+            LgEt wyH8e2YgclICOs2HqzBm8xW9DAlkJt 7 cPIx__KAN44hKmQvvah46QrB6AZHCSynmyof9
+            msg Cpix__KAn44HkmQvvah46qrB6aZHcSYnmYOF9 
+        """
+            ,arrayOf(117, 147, 34, 64, 243, 210, 18, 70, 0, 213, 52, 152, 18, 140, 96, 99, 39, 52, 97, 140, 139).map { it.toChar() }.joinToString("")
+        , arrayOf(18, 147, 34, 117, 140).map { it.toChar() }.joinToString(""))
+    }
+
+    @Test
+    fun `Random test 2| renamed`() {
+        Check("""
+             var L    [       21        ]         V2 V3
+             set V2 21
+             wneq V2 0
+                 dec V2 1
+                 read V3
+//                 msg V3
+                 lset L V2 V3
+             end
+             wneq V2 21
+                lget L V2 V3
+                msg V3
+                inc V2 1
+             end    
+             lget L 8 V3
+             msg V3
+             lget L 19 V3
+             msg V3
+             lget L 18 V3
+             msg V3
+             lget L 20 V3
+             msg V3
+             lget L 7 V3
+             msg V3 
+        """
+            ,arrayOf(117, 147, 34, 64, 243, 210, 18, 70, 0, 213, 52, 152, 18, 140, 96, 99, 39, 52, 97, 140, 139).map { it.toChar() }.joinToString("")
+            , arrayOf(18, 147, 34, 117, 140).map { it.toChar() }.joinToString(""))
+    }
 
 }
