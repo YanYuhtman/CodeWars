@@ -20,8 +20,8 @@ fun brainFuckParse(command:String, input:String):String{
         when(command[codePointer]){
             '>' -> tapePointer++
             '<' -> tapePointer--
-            '+' -> tape[tapePointer]++
-            '-' -> tape[tapePointer]--
+            '+' -> tape[tapePointer] = Char((tape[tapePointer] + 1).code and 0xFF)
+            '-' -> tape[tapePointer] = Char((tape[tapePointer] - 1).code and 0xFF)
             '.' -> output.append(tape[tapePointer])
             ',' -> tape[tapePointer] = input[inputPointer++]
             '[' -> {
@@ -906,8 +906,8 @@ class `To BrainFuck Transpiler` {
     {
         val RawCode = _RawCode.trimIndent()
         println(RawCode)
-//        println("<b>Input :</b> ${Input.toCharArray().map{it.toInt()}}")
-//        println("<b>Expected output :</b> ${Expect.toCharArray().map{it.toInt()}}")
+        println("Input : ${Input.toCharArray().map{"\\u%04x".format(it.toInt() and 0xFF) }}")
+        println("Expected output : ${Expect.toCharArray().map{"\\u%04x".format(it.toInt() and 0xFF) }}")
         val Code = kcuf(RawCode)
 //        println("<b>Output code length :</b> ${Code.length}")
         assertEquals(Expect,brainFuckParse(Code,Input),Message)
@@ -977,9 +977,9 @@ class `To BrainFuck Transpiler` {
 		msg a b c
 		sub a b a
 		msg a b c
-		//mul b a c
-		//msg a b c
-		""","0\u0007","\u0030\u0007\u0037\u0029\u0007\u0037")//\u0029\u0007\u001f")
+		mul b a c
+		msg a b c
+		""","0\u0007","\u0030\u0007\u0037\u0029\u0007\u0037\u0029\u0007\u001f")
     }
     @Test
     fun `FixedTest 0 | Basic 3 | Works for add, sub`(){
@@ -1231,6 +1231,53 @@ class `To BrainFuck Transpiler` {
                 """, "", ""
             )
         }
+    }
+    @Test
+    fun `Random test 1`() {
+        Check("""
+            VaR jhVcnckykSvQGYCYYhdAm2UD${'$'} MNfrZgAbhaSLH5ebGyFViVDgcVbmUqdz_MbICI WT5W_8Kr90lP5nqTRTonTVn wYoxouQx5oKICFHAAuYza
+            rEad jHvCnckYkSVqgYCYYHdAM2ud${'$'}
+            ReAD MnfrZGabhaslh5ebGYfvIVdGcvBMuQDz_MBici
+            set WT5w_8kr90lP5nqtRtonTVn 0
+            WnEq wT5w_8Kr90LP5NQtRtoNtVn 2
+            	Add JHvcNckykSvQgYcYYhdAm2uD${'$'} MNfRzgaBhaslh5EbGyfVIvDgCVBmUQDZ_mbIcI wyOXOUqX5okicFhaaUYzA
+            	mul JhvcnCkYKSVqGycyYhdAm2UD${'$'} wYOxouqX5okICFHaAUYZa mNfRZGABhaSLH5EbgYFviVdGcVBmUqDz_MBicI
+            	suB wyoxOUqx5oKICfhaAuYzA MnfrzgABhaSlH5ebGyfvIvdgcvBmUQDz_mBicI jhvcNcKYKsVqGYcyYHDam2UD${'$'}
+            	INc wT5w_8kR90lP5NqTrtOnTVN 257
+            eND
+            MsG jHvCncKyKSvQgYCyYHdaM2UD${'$'} mNFrZGaBHASlH5ebgyFvivdgcVBmUqdz_mbicI " -- " wt5W_8kr90LP5nQTRTOntvN wyoxOuqx5okicfhaAuYza
+        """
+            , arrayOf(172, 95).map { it.toChar() }.joinToString("")
+            , arrayOf(222, 45, 32, 45, 45, 32, 2, 11).map { it.toChar() }.joinToString("")
+        )
+
+    }
+
+    @Test
+    fun `Random test 1|renamed variables`() {
+        Check("""
+              var V1 V2 V3 V4
+              
+//              mul 167 11 V2
+//              sub 11 45 V1
+              
+            read V1
+            read V2
+            set V3 0
+            wneq V3 2
+                add V1 V2 V4
+                mul V1 V4 V2
+                sub V4 V2 V1
+                inc V3 257
+                
+                msg V1 V2
+                
+            end
+//            msg V1 V2 " -- " V3 V4
+        """
+            , arrayOf(172, 95).map { it.toChar() }.joinToString("")
+            , arrayOf(222, 45, 32, 45, 45, 32, 2, 11).map { it.toChar() }.joinToString("")
+        )
     }
 
 
