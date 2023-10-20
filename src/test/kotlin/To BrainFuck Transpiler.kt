@@ -55,6 +55,7 @@ const val VARIABLE_SIZE = 2
 const val CMP_SIZE = 6
 fun generateTempVariableId(original:String) = "${Random.nextBytes(1)}#$original"
 const val ARRAY_OP_SIZE = 10
+const val OP_CELL = "opCell"
 class `To BrainFuck Transpiler` {
     //https://www.toInt()wars.com/kata/59f9cad032b8b91e12000035
     enum class TokenType{
@@ -240,6 +241,7 @@ class `To BrainFuck Transpiler` {
             return programTokens[blockStack.pop()]!!
         }
         init {
+            interpreter.mapVariable(OP_CELL)
             if(lexer.tokens.isEmpty() || lexer.tokens.last().token != Token.EOT)
                 throw ParserException("There is no tokens for parsing")
             nextSignificantToken()
@@ -294,7 +296,7 @@ class `To BrainFuck Transpiler` {
                         throw ParserException("Positive number is expected $currentToken")
                     if(nextToken().token != Token.RBRAKET)
                         throw ParserException("${Token.LBRAKET} token expected")
-                    interpreter.initVariable(id,ARRAY_OP_SIZE + size * VARIABLE_SIZE + 2)
+                    interpreter.initVariable(id,ARRAY_OP_SIZE + size * 2 + 2)
                     declaredVariables[id] = VarType.LIST
                 }else
                     interpreter.initVariable(id,VARIABLE_SIZE)
@@ -590,6 +592,16 @@ class `To BrainFuck Transpiler` {
             if(debug) println("Clearing pointer index: $pointer")
         }
 
+        private fun move(fromId:String, toId: String) = move(memoryMap[fromId]!!,memoryMap[toId]!!)
+        private fun move(fromPtr: Int, toPtr:Int):Int{
+            var oIndex = this.output.length
+            clear(toPtr)
+            moveToPointer(fromPtr).append("[-")
+            moveToPointer(toPtr).append('+')
+            moveToPointer(fromPtr).append(']')
+            if(debug) println("Move $fromPtr to $toPtr: ${output.substring(oIndex)}" )
+            return toPtr
+        }
         private fun copy(fromId:String, toId: String) = copy(memoryMap[fromId]!!,memoryMap[toId]!!)
         private fun copyToTempVariable(original:TokenProps):TokenProps{
             val tmpToken = original.copy()
@@ -606,7 +618,7 @@ class `To BrainFuck Transpiler` {
             currentMemPointer++
             moveToPointer(toPtr).append("+")
             moveToPointer(fromPtr).append("]")
-            recombine(fromPtr)//.append(">[-<+>]<")
+            recombine(fromPtr)
             if(debug) println("Copy $fromPtr to $toPtr: ${output.substring(oIndex)}" )
             return toPtr
         }
@@ -632,23 +644,23 @@ class `To BrainFuck Transpiler` {
             var oIndex = output.length
             for(i in 0..1)
                 when(tokens[i].token){
-                    Token.VAR_NAME -> copy(memoryMap[tokens[i].id]!!,freeMemPointer)
-                    Token.NUMBER,Token.CHARACTER-> addition(freeMemPointer,tokens[i].toInt())
+                    Token.VAR_NAME -> copy(tokens[i].id,OP_CELL)
+                    Token.NUMBER,Token.CHARACTER-> addition(memoryMap[OP_CELL]!!,tokens[i].toInt())
                     else->throw InterpreterException("Unsupported token: ${tokens[i]} for addition")
                 }
-            mapVariable(tokens[2].id,VARIABLE_SIZE)
+            move(OP_CELL,tokens[2].id)
             if(debug) println("Operator ADD: ${output.substring(oIndex)}")
         }
         fun sub(tokens:Array<TokenProps>){
             var oIndex = output.length
             when(tokens[1].token){
                 Token.NUMBER,Token.CHARACTER -> {
-                    copy(memoryMap[tokens[0].id]!!,freeMemPointer)
-                    addition(freeMemPointer,-(tokens[1].toInt()))
+                    copy(tokens[0].id,OP_CELL)
+                    addition(memoryMap[OP_CELL]!!,-(tokens[1].toInt()))
                 }
                 Token.VAR_NAME -> {
                     sub(memoryMap[tokens[0].id]!!,memoryMap[tokens[1].id]!!)
-                    copy(memoryMap[tokens[0].id]!!,freeMemPointer)
+                    copy(tokens[0].id,OP_CELL)
 
                     recombine(memoryMap[tokens[0].id]!!)
                     recombine(memoryMap[tokens[1].id]!!)
@@ -656,7 +668,7 @@ class `To BrainFuck Transpiler` {
                 }
                 else->throw InterpreterException("Unsupported token: ${tokens[1]} for subtraction ")
             }
-            mapVariable(tokens[2].id,VARIABLE_SIZE)
+            move(OP_CELL,tokens[2].id)
             if(debug) println("Operator SUB: ${output.substring(oIndex)}")
         }
 
@@ -667,10 +679,11 @@ class `To BrainFuck Transpiler` {
 
             moveToPointer(tokens[1].id).append("[->+")
             currentMemPointer++
-            copy(memoryMap[tokens[0].id]!!,freeMemPointer)
+            copy(tokens[0].id,OP_CELL)
             moveToPointer(tokens[1].id).append("]")
             recombine(memoryMap[tokens[1].id]!!)
-            mapVariable(tokens[2].id,VARIABLE_SIZE)
+
+            move(OP_CELL,tokens[2].id)
 
             if(debug) println("Operator MUL: ${output.substring(oIndex)}")
 
@@ -691,11 +704,11 @@ class `To BrainFuck Transpiler` {
             currentMemPointer+=4
             when(mode) {
                 0-> {
-                    mapVariable(tokens[3].id, VARIABLE_SIZE, currentMemPointer)
-                    mapVariable(tokens[2].id, VARIABLE_SIZE, currentMemPointer + 2)
+                    move(currentMemPointer,memoryMap[tokens[3].id]!!)
+                    move(currentMemPointer + 2,memoryMap[tokens[2].id]!!)
                 }
-                1-> mapVariable(tokens[2].id, VARIABLE_SIZE, currentMemPointer + 2)
-                2-> {mapVariable(tokens[2].id, VARIABLE_SIZE, currentMemPointer); freeMemPointer+=2}
+                1-> {move(currentMemPointer + 2,memoryMap[tokens[2].id]!!); freeMemPointer+=2}
+                2-> {move(currentMemPointer,memoryMap[tokens[2].id]!!); freeMemPointer+=4}
             }
 
             if(debug) println("Operator DIVMOD: ${output.substring(oIndex)} ")
@@ -980,6 +993,16 @@ class `To BrainFuck Transpiler` {
 		mul b a c
 		msg a b c
 		""","0\u0007","\u0030\u0007\u0037\u0029\u0007\u0037\u0029\u0007\u001f")
+    }
+    @Test
+    fun `FixedTest 0 | Basic 4 | Works for add, sub, mul`() {
+        Check("""
+            var A B 
+            set A 2
+            set B 3
+            add A B A
+            msg A
+        ""","","\u0005")
     }
     @Test
     fun `FixedTest 0 | Basic 3 | Works for add, sub`(){
@@ -1270,10 +1293,10 @@ class `To BrainFuck Transpiler` {
                 sub V4 V2 V1
                 inc V3 257
                 
-                msg V1 V2
+//                msg V1 V2
                 
             end
-//            msg V1 V2 " -- " V3 V4
+            msg V1 V2 " -- " V3 V4
         """
             , arrayOf(172, 95).map { it.toChar() }.joinToString("")
             , arrayOf(222, 45, 32, 45, 45, 32, 2, 11).map { it.toChar() }.joinToString("")
