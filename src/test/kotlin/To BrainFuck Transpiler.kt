@@ -799,28 +799,6 @@ class `To BrainFuck Transpiler` {
             if(debug) println("Compare of [${tokens.map { it.id }.joinToString(",")}]: ${output.substring(oIndex)}")
 
         }
-        fun cmpOLD(tokens: Array<TokenProps>, ptr: Int = freeMemPointer, remap:Boolean = true){
-            var oIndex = output.length
-            setCmpValue(tokens[0],ptr)
-            setCmpValue(tokens[1],ptr+1)
-            moveToPointer(ptr)
-            //sign(x,y) a[0] = x, a[1] = y (single cell value) a[5] = R
-            //init at x
-            output.append( """
-                
-                   >>>>>R[-]<<<<<
-                   x[ >>temp0+
-                        <y[- >temp0[-] >temp1+ <<y]
-                        >temp0[- >>z+ <<temp0]
-                        >temp1[- <<y+ >>temp1]
-                   <<y- <x- ]
-                >y[>>>>R-<[z->R++<]tmp1<<<[-]]>>>>
-            """.trimIndent())
-            currentMemPointer = ptr + CMP_SIZE - 1
-            if(remap)
-                mapVariable(tokens[2].id,VARIABLE_SIZE,currentMemPointer)
-            if(debug) println("Compare of [${tokens.map { it.id }.joinToString(",")}]: ${output.substring(oIndex)}")
-        }
 
         private fun sCmp(tokens: Array<TokenProps>,neq:Boolean, ptr: Int = freeMemPointer){
             var oIndex = output.length
