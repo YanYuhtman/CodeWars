@@ -766,6 +766,35 @@ class `To BrainFuck Transpiler` {
             setCmpValue(tokens[0],ptr)
             setCmpValue(tokens[1],ptr+1)
             moveToPointer(ptr)
+
+            //++++ > +++ > p >s> n > f   <<<<<
+            //size = 6 i(0)=x i(1)=y i(4) = result
+            output.append("""
+                x[->>+>>-<<<<]
+                >y[->->>+
+                    >+f<
+                    n[>-f]>f[-<<+s>>>]
+                    <<<<<]
+                >>>>+<<    
+                f[-
+                    >[+>-f2]>[-f2>>>]<<<<
+                    r0[>>r1[<<r0+>>r1-]]
+                    <+f<[->-f>-<<]>f[-]
+                ]
+                >>f2[-<<<+>> r1[<<r0[>>r1+<<r0-]]>>>]<<
+                >
+            """.trimIndent())
+            currentMemPointer+=4
+            if(remap)
+                mapVariable(tokens[2].id,VARIABLE_SIZE,currentMemPointer)
+            if(debug) println("Compare of [${tokens.map { it.id }.joinToString(",")}]: ${output.substring(oIndex)}")
+
+        }
+        fun cmpOLD(tokens: Array<TokenProps>, ptr: Int = freeMemPointer, remap:Boolean = true){
+            var oIndex = output.length
+            setCmpValue(tokens[0],ptr)
+            setCmpValue(tokens[1],ptr+1)
+            moveToPointer(ptr)
             //sign(x,y) a[0] = x, a[1] = y (single cell value) a[5] = R
             //init at x
             output.append( """
@@ -1136,6 +1165,37 @@ class `To BrainFuck Transpiler` {
             cmp ONE SIX R
             msg R
             """, "", "\u0001\u00ff\u0000\u00ff")
+    }
+    @Test
+    fun `cmp failing test1`(){
+        Check("""
+            var __defineGetter__  hasOwnProperty __lookupGetter__ __lookupSetter__ propertyIsEnumerable constructor toString toLocaleString valueOf isPrototypeOf
+            reAd __defineGetter__
+            rEad constructor
+            call __PROto__ constructor __defineGetter__
+            msg constructor __defineGetter__ valueOf
+            
+            proc __proto__ __defineSetter__ constructor
+                cmp __defineSetter__ constructor valueOf 
+        """,  arrayOf(0,1).map { it.toChar() }.joinToString("")
+            ,arrayOf(1,0,1).map { it.toChar() }.joinToString("")
+        )
+    }
+    @Test
+    fun `cmp failing test2`(){
+        Check("""
+            var __defineGetter__  hasOwnProperty __lookupGetter__ __lookupSetter__ propertyIsEnumerable constructor toString toLocaleString valueOf isPrototypeOf
+            reAd __defineGetter__
+            rEad constructor
+            call __PROto__ constructor __defineGetter__
+            msg constructor __defineGetter__ valueOf
+            
+            proc __proto__ __defineSetter__ constructor
+                cmp __defineSetter__ constructor valueOf
+            end
+        """,  arrayOf(0,255).map { it.toChar() }.joinToString("")
+            ,arrayOf(255,0,1).map { it.toChar() }.joinToString("")
+        )
     }
 
     @Test
