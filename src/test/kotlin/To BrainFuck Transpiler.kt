@@ -549,7 +549,7 @@ class `To BrainFuck Transpiler` {
             val add = abs(aValue)
             if(optimized && add > 4) {
                 val mult = floor(sqrt(abs(add).toDouble())).toInt()
-                val reminder = if (mult == 0) add else add % (mult * mult)
+                val reminder = if (mult == 0) add else add - (mult * mult)
                 output.append('>').append(CharArray(mult) { '+' }).append("[<")
                     .append(CharArray(mult) { symbol }).append(">-]<")
                     .append(CharArray(reminder) { symbol })
@@ -1003,6 +1003,18 @@ class `To BrainFuck Transpiler` {
     }
 
     @Test
+    fun `FixedTest 0 | Basic 1 | addPtimized`()
+    {
+        Check("""
+            var a 
+            set a 8
+            msg a
+            ""","",Char(8).toString())
+
+
+    }
+
+    @Test
     fun `FixedTest 0 | Basic 1 | Works for set, inc, dec`()
     {
         Check("""
@@ -1396,7 +1408,7 @@ class `To BrainFuck Transpiler` {
         )
     }
 
-//    @Test
+    @Test
     fun `Random test 2`() {
         Check("""
            vAR wyh8E2ygclicos2HQZBM8XW9dALkjT    [       21        ]         Hp9pxvwdL6fjNb3LUGoPYtLH4C9T cpIX__kAn44HKmQvvAh46QRB6AzhcSYNmyOf9
@@ -1421,24 +1433,31 @@ class `To BrainFuck Transpiler` {
         , arrayOf(18, 147, 34, 117, 140).map { it.toChar() }.joinToString(""))
     }
 
-//    @Test
+    @Test
     fun `Random test 2| renamed`() {
         Check("""
-             var L    [       21        ]         V2 V3
+             var L    [       21        ]         V2 V3 T
              set V2 21
              wneq V2 0
                  dec V2 1
                  read V3
-//                  msg V3
                  lset L V2 V3
+//                 lget L V2 T
+//                 msg T
              end
+//             wneq V2 21
+//                 lget L V2 T
+//                 msg T
+//                 inc V2 1
+//             end
+                 
                      
-                    set V2 8
-                    lget L V2 V3
-                    msg V3
+//             set V2 0
+//             lget L V2 T
+//             msg T
                     
-//             lget L 8 V3
-//             msg V3
+             lget L 8 V3
+             msg V3
 //                    lget L 9 V3
 //                    msg V3
 //             lget L 19 V3
@@ -1451,7 +1470,55 @@ class `To BrainFuck Transpiler` {
 //             msg V3 
         """
             ,arrayOf(117, 147, 34, 64, 243, 210, 18, 70, 0, 213, 52, 152, 18, 140, 96, 99, 39, 52, 97, 140, 139).map { it.toChar() }.joinToString("")
-            , arrayOf(18, 147, 34, 117, 140).map { it.toChar() }.joinToString(""))
+//            ,arrayOf(117, 147, 34, 64, 243, 210, 18, 70, 0, 213, 52, 152, 18, 140, 96, 99, 39, 52, 97, 140, 139).map { it.toChar() }.reversed().joinToString("")
+            , arrayOf(18).map { it.toChar() }.joinToString("")
+           // , arrayOf(18, 147, 34, 117, 140).map { it.toChar() }.joinToString("")
+            )
     }
 
+
+    @Test
+    fun `Random test 3`(){
+        Check("vaR JmkBQiNv5SgOnfJeQJu7VMvmEeV\$12U6DBP    [       20        ]         SXoZqY062kkDIIZt_KYun QrZF7as\$tD9ZSrNbHaYbQfGdvvUVI6abpFh\n" +
+                "SeT sxOZqy062kKDIIzt_kYun 20\n" +
+                "wNeq SXOzqy062KkdIIzT_KYun 0\n" +
+                "\tDec sXOZQY062kkDiIzt_kYun 1\n" +
+                "\tREAD QrzF7AS\$tD9zsRnbHayBQfgdVvUvI6AbpFH\n" +
+                "\tLSet jmkBqiNV5sgoNfJeqjU7VMvmEEv\$12u6dbp SXOzQY062kkDIIZt_KyuN qrZf7as\$tD9ZSRnbhAyBqfgDvVuVI6abpfh\n" +
+                "eNd\n" +
+                "lGET JmkbqInV5sGOnFJeqJu7VmvmEev\$12u6dBP 5 QRZF7AS\$td9ZSrNbHaYBQFgdvvuvi6AbPfh\n" +
+                "msG QrZF7as\$TD9ZsrNbhAYBQFgdVvUVi6aBpFH\n" +
+                "lGeT jMkbqiNv5sGonFjeqju7VMVMeeV\$12u6dBP 3 qRzf7AS\$td9zsrNBhaYBqfgDVvUVI6abpFh\n" +
+                "mSg QRzf7aS\$td9zsRnbHAyBqFgDVVuvi6abPFh\n" +
+                "LGEt JMKBqiNv5sgOnfJEqJU7vmvmEEV\$12U6DbP 14 QRZf7aS\$Td9zSrNBhAybqFGdVVuvI6AbpFH\n" +
+                "msg QRzf7AS\$td9zsRNbHaYBqFGdvvUvI6aBpFH\n" +
+                "lGet JMkbqiNv5SgOnFJeqJU7VmVMeEv\$12U6dBp 2 qrZF7as\$Td9ZsrNBHAybQfGDvvuVI6AbpFh\n" +
+                "MSg qRZf7aS\$TD9zSrNbhaYbqfgDVvuvi6aBpFH\n" +
+                "lgET JMkBQInV5sGOnFJeQJU7vMvmeev\$12U6DbP 8 qRzF7As\$TD9ZsrNBhaYBQfGDVVUVi6aBPFh\n" +
+                "MSG qrZF7aS\$Td9ZsRnbhayBqFgDvVuvi6AbpFH", arrayOf(124, 238, 205, 98, 195, 83, 190, 114, 2, 244, 247, 64, 48, 134, 187, 153, 97, 71, 81, 94).map { it.toChar() }.joinToString("")
+            ,arrayOf(187, 97, 83, 71, 64).map { it.toChar() }.joinToString(""))
+    }
+    @Test
+    fun `Random test 3|renamed`(){
+        Check("""
+            var L    [       20        ]         V1 V2
+            set V1 20
+            wneq V1 0
+                dec V1 1
+                read V2
+                lset L V1 V2
+            end
+            lget L 5 V2
+            msg V2
+            lget L 3 V2
+            msg V2
+            lget L 14 V2
+            msg V2
+            lget L 2 V2
+            msg V2
+            lget L 8 V2
+            msg V2
+        """, arrayOf(124, 238, 205, 98, 195, 83, 190, 114, 2, 244, 247, 64, 48, 134, 187, 153, 97, 71, 81, 94).map { it.toChar() }.joinToString("")
+            ,arrayOf(187, 97, 83, 71, 64).map { it.toChar() }.joinToString(""))
+    }
 }
