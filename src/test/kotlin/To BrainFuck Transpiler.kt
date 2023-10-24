@@ -52,7 +52,7 @@ const val CHAR_QUOTE = '\''
 const val STRING_QUOTE = '\"'
 val WHITESPACE_CHARS = charArrayOf(' ','\t','\r')
 const val VARIABLE_SIZE = 2
-const val CMP_SIZE = 6
+const val CMP_SIZE = 8
 fun generateTempVariableId(original:String) = "${Random.nextBytes(1)}#$original"
 const val ARRAY_OP_SIZE = 10
 const val OP_CELL = "opCell"
@@ -770,18 +770,27 @@ class `To BrainFuck Transpiler` {
             //++++ > +++ > p >s> n > f   <<<<<
             //size = 6 i(0)=x i(1)=y i(4) = result
             output.append("""
+                >>+p<<
+                x[>>-p]>>[
+                      <y[>-p
+                        <[-]++<+>> x=0 y=0 set y=2 x=1 ]>
+                        [-s>>>-f<< //don't compare ]
+                      
+                    >]<<<<
+                    
+                
                 x[->>+>>-<<<<]
                 >y[->->>+
                     >+f<
                     n[>-f]>f[-<<+s>>>]
                     <<<<<]
-                >>>>+<<    
-                f[-
+                >>>>+f<<          
+                s[-
                     >[+>-f2]>[-f2>>>]<<<<
                     r0[>>r1[<<r0+>>r1-]]
                     <+f<[->-f>-<<]>f[-]
                 ]
-                >>f2[-<<<+>> r1[<<r0[>>r1+<<r0-]]>>>]<<
+                >>f[-<<<+>> r1[<<r0[>>r1+<<r0-]]>>>]<<
                 >
             """.trimIndent())
             currentMemPointer+=4
