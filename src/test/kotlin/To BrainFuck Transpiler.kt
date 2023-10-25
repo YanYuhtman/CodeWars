@@ -757,7 +757,7 @@ class `To BrainFuck Transpiler` {
             clear(toPtr)
             when(token.token){
                 Token.VAR_NAME -> copy(memoryMap[token.id]!!,toPtr)
-                Token.NUMBER -> addition(toPtr,token.toInt())
+                Token.NUMBER,Token.CHARACTER -> addition(toPtr,token.toInt())
                 else -> throw InterpreterException("Token type ${token.token} for argument of ${Token.CMP} is not supported")
             }
         }
@@ -1168,6 +1168,21 @@ class `To BrainFuck Transpiler` {
             cmp ONE SIX R
             msg R
             """, "", "\u0001\u00ff\u0000\u00ff")
+    }
+    @Test
+    fun `FixedTest 1 cmp`(){
+        Check("""
+            var X K
+            read X
+            cmp 80 X K
+            msg X K
+            cmp X 'z' K
+            msg X K
+            cmp X X K
+            msg X K
+        """,arrayOf(128).map { it.toChar() }.joinToString("")
+            ,arrayOf(128, 255, 128, 1, 128, 0).map { it.toChar() }.joinToString("")
+        )
     }
     @Test
     fun `cmp failing test1`(){
