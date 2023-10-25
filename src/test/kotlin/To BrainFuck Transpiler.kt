@@ -355,12 +355,7 @@ class `To BrainFuck Transpiler` {
                 list[i] = nextToken()
                 when(list[i].token){
                     Token.VAR_NAME->{}
-                    Token.NUMBER,Token.CHARACTER -> {
-                        val value = list[i].toInt()
-                        list[i] = TokenProps(Token.VAR_NAME,list[i].startPos,list[i].endPos,generateTempVariableId("bVar$i"))
-                        interpreter.mapVariable(list[i].id)
-                        interpreter.set(list[i].id,value)
-                    }
+                    Token.NUMBER,Token.CHARACTER -> {}
                     else -> throw ParserException("For binary operation argument $i token ${list[i].token} is invalid")
                 }
             }
@@ -693,10 +688,15 @@ class `To BrainFuck Transpiler` {
         fun divMod(tokens:Array<TokenProps>) = divMod(tokens, 0)
         private fun divMod(tokens:Array<TokenProps>, mode:Int = 0){
             var oIndex = output.length
-            val nPtr = copy(memoryMap[tokens[0].id]!!,freeMemPointer)
-            freeMemPointer+=VARIABLE_SIZE
-            val dPtr = copy(memoryMap[tokens[1].id]!!,freeMemPointer)
-            freeMemPointer+=VARIABLE_SIZE
+            val nPtr = freeMemPointer
+            for(i in 0..1){
+                when(tokens[i].token){
+                    Token.VAR_NAME->{copy(memoryMap[tokens[i].id]!!,freeMemPointer);freeMemPointer+=VARIABLE_SIZE}
+                    Token.NUMBER->{addition(freeMemPointer,tokens[i].toInt());freeMemPointer+=VARIABLE_SIZE}
+                    else->throw InterpreterException("Unsupported token ${tokens[i]} for divMod operation")
+                }
+            }
+
             moveToPointer(freeMemPointer).append("+")
 
             moveToPointer(nPtr).append("[->>-[>>+>>>>]>>[[-<<+>>]+>>+>>>>]<<<<<<<<<<]>>>>-")
@@ -942,7 +942,11 @@ class `To BrainFuck Transpiler` {
     }
 
     fun kcuf(code: String): String {
-        return Parser(Lexer(code)).interpreter.toString()
+        println("$code")
+        val start = System.nanoTime()
+        val result = Parser(Lexer(code)).interpreter.toString()
+        println("Executed within ${(System.nanoTime() - start)/1_000_000.0} ms")
+        return result
     }
     fun Check(_RawCode : String,Input : String = "",Expect : String = "",Message : String = "")
     {
@@ -1498,5 +1502,71 @@ class `To BrainFuck Transpiler` {
             msg V2
         """, arrayOf(124, 238, 205, 98, 195, 83, 190, 114, 2, 244, 247, 64, 48, 134, 187, 153, 97, 71, 81, 94).map { it.toChar() }.joinToString("")
             ,arrayOf(187, 97, 83, 71, 64).map { it.toChar() }.joinToString(""))
+    }
+
+    @Test
+    fun `Random test 4`(){
+        Check("Var uVnsFlXO1OrhqNfx\$VDzzrNjR47F0Ff1Rjhn    [       21        ]         EA0whPQ524RJpGq57GexxWLJpQp4efRM Wd0oEhijt\$033EVw6BmLGDc6xhj_UNdP\n" +
+                "seT EA0wHPq524rJpGQ57gEXxwljpqP4EfRm 21\n" +
+                "WNEQ ea0WHPq524rjpGq57GexXWLjPqP4EFrm 0\n" +
+                "\tDeC EA0whPq524RJpgQ57gexxWLJPqP4EfrM 1\n" +
+                "\tread wD0oehIjT\$033evW6BmlgdC6xhj_undp\n" +
+                "\tlseT UvnSFLXO1OrhqnFx\$VdzzRnJR47f0Ff1RjHn Ea0whpQ524RjpGQ57gEXXwlJpQP4efrM WD0OEhIjT\$033EVw6BmLGdC6XHJ_unDp\n" +
+                "end\n" +
+                "LGEt UvnsFlxO1OrhQnFx\$VDzZrnJr47f0Ff1RJhN 10 Wd0oehIJt\$033evW6bmlgDC6Xhj_undP\n" +
+                "MsG Wd0OEHiJt\$033evW6BMlGDc6XHj_unDP\n" +
+                "lGET UVnsflXO1oRhQnfX\$VDzZrNJr47F0Ff1rjhN 8 Wd0oEHIjT\$033EvW6bmLgDc6xHJ_UNDp\n" +
+                "mSg Wd0OEHiJt\$033Evw6bmlgdc6Xhj_uNdP\n" +
+                "lGet UvNSFlxO1ORHQnFX\$vdzzRNjR47F0Ff1rjHN 17 wd0oEHIjt\$033EvW6bmlgdc6xHJ_UnDP\n" +
+                "MsG wd0OEHijt\$033EVW6BMLgdC6xhj_Undp\n" +
+                "lGET uVnsflxO1orhqnFX\$VDZZrnJR47F0Ff1rJhn 7 wD0OEHijT\$033eVw6bMlgdc6XhJ_unDp\n" +
+                "msg WD0oEhIjT\$033eVw6bMlgdC6XhJ_UNdp\n" +
+                "lGET UvNsFLXo1orhQnFx\$VdZZrnJR47f0ff1rjhN 4 Wd0OeHIjt\$033eVW6bmlgdC6XhJ_UnDP\n" +
+                "MSG Wd0oEHIJT\$033EvW6BmlGDc6XHj_unDP",arrayOf(237, 70, 157, 34, 226, 127, 206, 54, 219, 42, 74, 185, 59, 9, 251, 86, 81, 233, 109, 86, 200).map { it.toChar() }.joinToString("")
+                    ,arrayOf(74, 59, 34, 9, 81).map { it.toChar() }.joinToString("")
+        )
+    }
+    @Test
+    fun `Long test 1|ex 4_765821 ms`(){
+        Check("VAr TWT4TJ__S4a\$YWmpQzg_sYMPw1Aw09aBy z6bYYdOXEHN0SDAcTbaT0f1VIZGl\n" +
+                "ReAd tWT4tJ__S4a\$YwMPqZg_syMPw1Aw09aBy\n" +
+                "DiVmOD tWT4tJ__S4a\$ywMpqZG_sYmPw1aw09abY 2 tWT4TJ__S4a\$YWmPqzg_SYMPW1AW09Aby z6bYYDOxeHn0SdactbaT0F1VIZGl\n" +
+                "iFEQ Z6byYdoxehN0sDaCTBat0f1VIzgl 0\n" +
+                "\tmsg \"Even\" tWt4Tj__s4a\$ywMpqzg_sYMpW1Aw09ABy\n" +
+                "\tmod TwT4TJ__S4a\$ywMPqZg_SyMpW1aW09ABy 2 Z6bYYdOxEHN0sdaCTbaT0F1vIZGL\n" +
+                "\tIFNeQ z6BYyDOXeHn0SdACtBAt0f1VizgL 1\n" +
+                "\t\tmSG \"Still#Even\"\n" +
+                "\teND\n" +
+                "End\n" +
+                "IfNeQ Z6bYYdOxEhN0SDacTbAT0F1VIzGL 0\n" +
+                "\tmsG \"Old\"\n" +
+                "eND"
+                    ,arrayOf(2).map { it.toChar() }.joinToString("")
+                ,arrayOf(69, 118, 101, 110, 1, 79, 108, 100).map { it.toChar() }.joinToString("")
+        )
+
+    }
+    @Test
+    fun `Long test 1|ex 4_765821 ms | renamed`(){
+        val code = """
+            var V1 V2
+            read V1
+            divmod V1 2 V1 V2
+            ifeq V2 0
+            	msg "Even" V1
+            	mod V1 2 V2
+            	ifneq V2 1
+            		msg "still#even"
+            	end
+            end
+            ifneq V2 0
+            	msg "Old"
+            end
+        """
+        Check(code
+            ,arrayOf(2).map { it.toChar() }.joinToString("")
+            ,arrayOf(69, 118, 101, 110, 1, 79, 108, 100).map { it.toChar() }.joinToString("")
+        )
+
     }
 }
