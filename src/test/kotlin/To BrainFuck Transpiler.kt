@@ -51,10 +51,11 @@ const val EOL = '\u000A'
 const val CHAR_QUOTE = '\''
 const val STRING_QUOTE = '\"'
 val WHITESPACE_CHARS = charArrayOf(' ','\t','\r')
-const val VARIABLE_SIZE = 2
+const val VARIABLE_SIZE = 3
 const val CMP_SIZE = 8
 fun generateTempVariableId(original:String) = "${Random.nextBytes(1)}#$original"
 const val ARRAY_OP_SIZE = 10
+const val ARRAY_VAR_SIZE = 2
 const val OP_CELL = "opCell"
 class `To BrainFuck Transpiler` {
     //https://www.toInt()wars.com/kata/59f9cad032b8b91e12000035
@@ -699,15 +700,15 @@ class `To BrainFuck Transpiler` {
 
             moveToPointer(freeMemPointer).append("+")
 
-            moveToPointer(nPtr).append("[->>-[>>+>>>>]>>[[-<<+>>]+>>+>>>>]<<<<<<<<<<]>>>>-")
-            currentMemPointer+=4
+            moveToPointer(nPtr).append("[->>>-[>>>+>>>>>>]>>>[[-<<<+>>>]+>>>+>>>>>>]<<<<<<<<<<<<<<<]>>>>>>-")
+            currentMemPointer+=(2*VARIABLE_SIZE)
             when(mode) {
                 0-> {
                     move(currentMemPointer,memoryMap[tokens[3].id]!!)
-                    move(currentMemPointer + 2,memoryMap[tokens[2].id]!!)
+                    move(currentMemPointer + VARIABLE_SIZE,memoryMap[tokens[2].id]!!)
                 }
-                1-> {move(currentMemPointer + 2,memoryMap[tokens[2].id]!!); freeMemPointer+=2}
-                2-> {move(currentMemPointer,memoryMap[tokens[2].id]!!); freeMemPointer+=4}
+                1-> {move(currentMemPointer + VARIABLE_SIZE,memoryMap[tokens[2].id]!!); freeMemPointer+=VARIABLE_SIZE}
+                2-> {move(currentMemPointer,memoryMap[tokens[2].id]!!); freeMemPointer+=(2*VARIABLE_SIZE)}
             }
 
             if(debug) println("Operator DIVMOD: ${output.substring(oIndex)} ")
@@ -906,7 +907,7 @@ class `To BrainFuck Transpiler` {
                     Token.NUMBER-> {
                         when(tokens[3].token) {
                             Token.NUMBER-> {
-                                moveToPointer(memoryMap[tokens[1].id]!! + ARRAY_OP_SIZE + tokens[2].id.toInt()*VARIABLE_SIZE - 1)
+                                moveToPointer(memoryMap[tokens[1].id]!! + ARRAY_OP_SIZE + tokens[2].id.toInt()*ARRAY_VAR_SIZE - 1)
                                 clear(currentMemPointer)
                                 addition(tokens[3].id.toInt())
                             }
@@ -1583,5 +1584,22 @@ class `To BrainFuck Transpiler` {
             ,arrayOf(69, 118, 101, 110, 1, 79, 108, 100).map { it.toChar() }.joinToString("")
         )
 
+    }
+    @Test
+    fun `Long test 2|ex_1_95`(){
+        Check("""
+            var V1 V2 CON V3
+            read V1
+            read V2
+            set CON 0
+            wneq CON 2
+            	add V1 V2 V3
+            	mul V1 V3 V2
+            	sub V3 V2 V1
+            	inc CON 257
+            end
+            msg V1 V2 " -- " CON V3
+        """,arrayOf(59, 169).map { it.toChar() }.joinToString("")
+            ,arrayOf(132, 96, 32, 45, 45, 32, 2, 228).map { it.toChar() }.joinToString(""))
     }
 }
